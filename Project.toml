@@ -2,3 +2,6 @@ name = "CellAdhesion"
 uuid = "de70fd3a-339d-49a1-8a3e-1005b3a1e3d0"
 authors = ["Alessandra <bonfantiale.ab@gmail.com>"]
 version = "0.1.0"
+
+[deps]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
