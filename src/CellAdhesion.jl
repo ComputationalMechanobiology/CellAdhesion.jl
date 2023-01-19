@@ -1,5 +1,12 @@
 module CellAdhesion
 
-greet() = print("Hello World!")
+CellAdhesionFloat = Float32
+export CellAdhesionFloat
+
+using Plots
+
+
+include("definitions.jl")
+include("utility.jl")
 
 end # module
