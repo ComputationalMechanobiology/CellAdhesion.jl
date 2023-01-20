@@ -56,8 +56,8 @@ end
 function _check_force(tol)
 
     junction = Interface(false, 12, [0,0,1,1,0,1,0,0,1,1,0,1], [], [], [], BitMatrix(undef,12,0))
-    param = Dict("load"=>"global")
-    junction = force(junction, param, convert(CellAdhesionFloat,1))
+    model = Model(Dict("model"=>"k_on_constant"), Dict("model"=>"k_off_slip"), Dict("load"=>"global"))
+    junction = force(junction, model, convert(CellAdhesionFloat,1))
 
     (junction.f == [0,0,2,2,0,2,0,0,2,2,0,2]) && (typeof(junction.f) == Vector{CellAdhesionFloat})
 

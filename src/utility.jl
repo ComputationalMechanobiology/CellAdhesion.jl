@@ -90,7 +90,7 @@ end
 
 
 """
-force(junction::Interface, param::Dict, s::CellAdhesionFloat)
+force(junction::Interface, model::Model, s::CellAdhesionFloat)
 
   Compute the force on each link. 
   Two options are available:
@@ -101,26 +101,26 @@ force(junction::Interface, param::Dict, s::CellAdhesionFloat)
 
   Input parameters:
     - junction: Interface data containing the state of the junction 
-    - param: parameters of the junction (containing the type of load distribution: "local" or "global")
+    - model: Model structure containing the type of load distribution: "local" or "global" (Model.param)
     - s: applied stress to the junction (CellAdhesionFloat type)
   Output parameters:
     - junction: updated force applied to each bond within the Interface data structure
 """
 
-function force(junction::Interface, param::Dict, s::CellAdhesionFloat)
+function force(junction::Interface, model::Model, s::CellAdhesionFloat)
 
   @assert !isempty(junction.v) "Bond state vector in Interface is empty"
 
   alpha = zeros(junction.n);
-  if haskey(param, "load")
-    state = param["load"]
+  if haskey(model.param, "load")
+    state = model.param["load"]
   else
     state = "global"
   end
 
-  if param["load"] == "global"
+  if state == "global"
       alpha .= junction.n/sum(junction.v) .*junction.v;
-  elseif param["load"] == "local"
+  elseif state == "local"
       l = distance(junction)
       alpha .= junction.n .* l ./ sum(l);
   end
@@ -135,14 +135,14 @@ KineticMonteCarlo(junction::Interface, param)     -NOT TESTED!!!!!
 
 """
 
-function KineticMonteCarlo(junction::Interface, param)
+function KineticMonteCarlo(junction::Interface, model::Model)
 
   random = rand(junction.n);
   v = junction.v
 
-  bond_events = findall(x->x==1, ((junction.k_on.*param["dt"]) .>random));
+  bond_events = findall(x->x==1, ((junction.k_on.*model.param["dt"]) .>random));
   v[bond_events] .= 1;
-  unbond_events = findall(x->x==1, ((junction.k_off.*param["dt"]) .>random));
+  unbond_events = findall(x->x==1, ((junction.k_off.*model.param["dt"]) .>random));
   v[unbond_events] .= 0;
 
   return Interface(junction.state, v, junction.k_on, junction.k_off, junction.f, junction.history)

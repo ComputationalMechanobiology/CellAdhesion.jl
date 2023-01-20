@@ -1,4 +1,4 @@
-export Interface
+export Interface, Model
 
 """
     Interface()
@@ -22,4 +22,10 @@ struct Interface
     history::BitMatrix
 end
 
+
+struct Model
+    k_on::Dict
+    k_off::Dict
+    param::Dict
+end
 
