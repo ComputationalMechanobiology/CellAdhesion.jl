@@ -8,5 +8,6 @@ using Plots
 
 include("definitions.jl")
 include("utility.jl")
+include("rates.jl")
 
 end # module

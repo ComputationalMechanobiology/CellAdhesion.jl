@@ -7,6 +7,8 @@ println("===============================================")
 println("Testing CellAdhesion")
 println("===============================================")
 println("|")
-
+println("|")
+println("|")
 
 include("test_utility.jl")
+include("test_rates.jl")
