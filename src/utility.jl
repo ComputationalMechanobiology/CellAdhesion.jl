@@ -130,20 +130,22 @@ function force(junction::Interface, param::Dict, s::CellAdhesionFloat)
 end
 
 
+"""
+KineticMonteCarlo(junction::Interface, param)     -NOT TESTED!!!!!
 
+"""
 
+function KineticMonteCarlo(junction::Interface, param)
 
+  random = rand(junction.n);
+  v = junction.v
 
-
-function KineticMonteCarlo!(v,k_off, k_on,N,k_off_0, dt)
-
-  k_tot = k_off.+k_on;
-  random = rand(N);
-
-  bond_events = findall(x->x==1, ((k_on.*dt) .>random));
+  bond_events = findall(x->x==1, ((junction.k_on.*param["dt"]) .>random));
   v[bond_events] .= 1;
-  unbond_events = findall(x->x==1, ((k_off.*dt) .>random));
+  unbond_events = findall(x->x==1, ((junction.k_off.*param["dt"]) .>random));
   v[unbond_events] .= 0;
+
+  return Interface(junction.state, v, junction.k_on, junction.k_off, junction.f, junction.history)
 
 
 end
