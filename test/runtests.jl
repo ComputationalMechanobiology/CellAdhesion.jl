@@ -12,3 +12,4 @@ println("|")
 
 include("test_utility.jl")
 include("test_rates.jl")
+include("test_processing.jl")

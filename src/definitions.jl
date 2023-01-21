@@ -19,7 +19,7 @@ struct Interface
     k_on::Vector{CellAdhesionFloat}
     k_off::Vector{CellAdhesionFloat}
     f::Vector{CellAdhesionFloat}
-    history::BitMatrix
+    history::Union{BitArray, Bool}
 end
 
 

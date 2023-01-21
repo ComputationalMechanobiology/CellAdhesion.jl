@@ -19,13 +19,10 @@ end
 
 function _check_state()
 
-    junction1 = Interface(false, 5, [0,0,0,0,0], [], [], [], BitMatrix(undef,5,0))
-    junction1 = check_state(junction1)
+    state1 = check_state(BitVector([0,0,0,0,0]))
+    state2 = check_state(BitVector([0,0,1,0,0]))
 
-    junction2 = Interface(true, 5, [0,0,1,0,0], [], [], [], BitMatrix(undef,5,0))
-    junction2 = check_state(junction2)
-
-    junction1.state == true && junction2.state == false
+    state1 == true && state2 == false
 
 end
 @test _check_state()
@@ -34,17 +31,10 @@ end
 
 function _check_distance()
 
-    junction1 = Interface(false, 12, [0,0,1,1,0,1,0,0,1,1,0,1], [], [], [], BitMatrix(undef,12,0))
-    l1 = CellAdhesion.distance(junction1)
-
-    junction2 = Interface(false, 12, [0,0,0,0,0,1,0,0,0,0,0,0], [], [], [], BitMatrix(undef,12,0))
-    l2 = CellAdhesion.distance(junction2)
-
-    junction3 = Interface(false, 12, [0,0,0,0,0,0,0,0,0,0,0,0], [], [], [], BitMatrix(undef,12,0))
-    l3 = CellAdhesion.distance(junction3)    
-
-    junction4 = Interface(false, 12, [1,1,1,0,1,0,1,1,0,0,1,0], [], [], [], BitMatrix(undef,12,0))
-    l4 = CellAdhesion.distance(junction4)    
+    l1 = CellAdhesion.distance(BitVector([0,0,1,1,0,1,0,0,1,1,0,1]), 12)
+    l2 = CellAdhesion.distance(BitVector([0,0,0,0,0,1,0,0,0,0,0,0]), 12)
+    l3 = CellAdhesion.distance(BitVector([0,0,0,0,0,0,0,0,0,0,0,0]), 12)    
+    l4 = CellAdhesion.distance(BitVector([1,1,1,0,1,0,1,1,0,0,1,0]), 12)    
 
 
     (l1 == [0,0,4,3,0,5,0,0,4,3,0,5]) && (l2 == [0,0,0,0,0,12,0,0,0,0,0,0]) && (l3 == zeros(12)) && (l4 == [3,2,3,0,4,0,3,4,0,0,5,0]) && (typeof(l1) == Vector{CellAdhesionFloat})
@@ -55,11 +45,10 @@ end
 
 function _check_force(tol)
 
-    junction = Interface(false, 12, [0,0,1,1,0,1,0,0,1,1,0,1], [], [], [], BitMatrix(undef,12,0))
     model = Model(Dict("model"=>"k_on_constant"), Dict("model"=>"k_off_slip"), Dict("load"=>"global"))
-    junction = force(junction, model, convert(CellAdhesionFloat,1))
+    f = force(BitVector([0,0,1,1,0,1,0,0,1,1,0,1]), 12, model, convert(CellAdhesionFloat,1))
 
-    (junction.f == [0,0,2,2,0,2,0,0,2,2,0,2]) && (typeof(junction.f) == Vector{CellAdhesionFloat})
+    (f == [0,0,2,2,0,2,0,0,2,2,0,2]) && (typeof(f) == Vector{CellAdhesionFloat})
 
 end
 

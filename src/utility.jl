@@ -2,7 +2,7 @@
 export init_bonds, check_state, force
 
 """
-init_bond(n::Integer, K::CellAdhesionFloat)
+init_bonds(n::Integer, K::CellAdhesionFloat)
 
   Generate the initial state of each bond within the cell junction.
 
@@ -25,62 +25,63 @@ end
 
 
 """
-check_state(junction::Interface)
+check_state(v::BitVector)
 
   Check if a junction is broken or still viable.
 
   Input parameters:
-    - junction: Interface data containing the state of each single bond (junction.v)
+    - v: vector with the state of each single bond 
   Output parameters:
-    - junction: Update the state of the junction (true = broken, false = viable)
+    - state: true = broken, false = viable
 """
 
-function check_state(junction::Interface)
+function check_state(v::BitVector)
 
-  @assert !isempty(junction.v) "Bond state vector in Interface is empty"
+  @assert !isempty(v) "Bond state vector in Interface is empty"
 
-  sum_v = sum(junction.v)
+  sum_v = sum(v)
   state = isequal(sum_v,0)
   
-  return Interface(state, junction.n, junction.v, junction.k_on, junction.k_off, junction.f, junction.history)
+  return state
 
 end
 
 
 """
-distance(junction::Interface)
+distance(v::BitVector, n::Integer)
 
   Compute the distance of each from its two closest closed link on each side. 
   Used to compute a "local" load distributions across closed bonds.
   Periodic bondary conditions for the edges.
 
   Input parameters:
-    - junction: Interface data containing the state and parameters of the junction 
+    - v: vector with the state of each single bond
+    - n: number of bonds in the junction
   Output parameters:
     - l: vector of CellAdhesionFloat containing the distance for each closed bond
 """
 
-function distance(junction::Interface)
+function distance(v::BitVector, n::Integer)
 
-  @assert !isempty(junction.v) "Bond state vector in Interface is empty"
+  @assert !isempty(v) "Bond state vector in Interface is empty"
 
-  l = zeros(junction.n);
-  if sum(junction.v) == 0
-       l .= zeros(junction.n);
-  elseif sum(junction.v) ==1
-      temp = findall(x->x==1, junction.v)
-      l[temp[1]] = junction.n;        
-  elseif sum(junction.v) == 2
-      temp = findall(x->x==1, junction.v)
-      l[temp[1]] = junction.n;
-      l[temp[2]] = junction.n;    
+  l = zeros(n);
+  if sum(v) == 0
+       l .= zeros(n);
+  elseif sum(v) ==1
+      temp = findall(x->x==1, v)
+      l[temp[1]] = n;        
+  elseif sum(v) == 2
+      temp = findall(x->x==1, v)
+      l[temp[1]] = n;
+      l[temp[2]] = n;    
   else
-      temp = findall(x->x==1, junction.v)
+      temp = findall(x->x==1, v)
       gaps = diff(temp);
       dist = zeros(size(temp));
       dist[2:end-1] = gaps[2:end] .+ gaps[1:end-1];
-      dist[1] = junction.n - temp[end] + temp[2];
-      dist[end] = junction.n - temp[end-1] + temp[1];
+      dist[1] = n - temp[end] + temp[2];
+      dist[end] = n - temp[end-1] + temp[1];
       l[temp] .= dist;
   end
 
@@ -90,7 +91,7 @@ end
 
 
 """
-force(junction::Interface, model::Model, s::CellAdhesionFloat)
+force(v::BitVector, n::Integer, model::Model, s::CellAdhesionFloat)
 
   Compute the force on each link. 
   Two options are available:
@@ -100,52 +101,52 @@ force(junction::Interface, model::Model, s::CellAdhesionFloat)
    If no load parameter is specified, global is used by default
 
   Input parameters:
-    - junction: Interface data containing the state of the junction 
+    - v: vector with the state of each single bond
+    - n: number of bonds in the junction
     - model: Model structure containing the type of load distribution: "local" or "global" (Model.param)
     - s: applied stress to the junction (CellAdhesionFloat type)
   Output parameters:
-    - junction: updated force applied to each bond within the Interface data structure
+    - f: (vector) force applied to each bond 
 """
 
-function force(junction::Interface, model::Model, s::CellAdhesionFloat)
+function force(v::BitVector, n::Integer, model::Model, s::CellAdhesionFloat)
 
-  @assert !isempty(junction.v) "Bond state vector in Interface is empty"
+  @assert !isempty(v) "Bond state vector in Interface is empty"
 
-  alpha = zeros(junction.n);
-  if haskey(model.param, "load")
-    state = model.param["load"]
-  else
-    state = "global"
-  end
+  alpha = zeros(n);
+  
+  state = model.param["load"]
+
 
   if state == "global"
-      alpha .= junction.n/sum(junction.v) .*junction.v;
+      alpha .= n/sum(v) .*v;
   elseif state == "local"
       l = distance(junction)
-      alpha .= junction.n .* l ./ sum(l);
+      alpha .= n .* l ./ sum(l);
   end
 
-  return Interface(junction.state, junction.n, junction.v, junction.k_on, junction.k_off, convert(Vector{CellAdhesionFloat}, alpha .* s), junction.history)
+  return convert(Vector{CellAdhesionFloat}, alpha .* s)
 
 end
 
 
 """
-KineticMonteCarlo(junction::Interface, param)     -NOT TESTED!!!!!
+KineticMonteCarlo(v::BitVector, n::Integer, k_on::Vector{CellAdhesionFloat}, k_off::Vector{CellAdhesionFloat}, model::Model)     -NOT TESTED!!!!!
 
 """
 
-function KineticMonteCarlo(junction::Interface, model::Model)
+function KineticMonteCarlo(v::BitVector, n::Integer, k_on::Vector{CellAdhesionFloat}, k_off::Vector{CellAdhesionFloat}, model::Model)
 
-  random = rand(junction.n);
-  v = junction.v
+  random = rand(n);
+  v_temp = copy(v);
 
-  bond_events = findall(x->x==1, ((junction.k_on.*model.param["dt"]) .>random));
-  v[bond_events] .= 1;
-  unbond_events = findall(x->x==1, ((junction.k_off.*model.param["dt"]) .>random));
-  v[unbond_events] .= 0;
+  bond_events = findall(x->x==1, ((k_on.*model.param["dt"]) .>random));
+  v_temp[bond_events] .= 1;
+  unbond_events = findall(x->x==1, ((k_off.*model.param["dt"]) .>random));
+  v_temp[unbond_events] .= 0;
 
-  return Interface(junction.state, v, junction.k_on, junction.k_off, junction.f, junction.history)
+
+  return v_temp
 
 
 end
