@@ -121,7 +121,7 @@ function force(v::BitVector, n::Integer, model::Model, s::CellAdhesionFloat)
   if state == "global"
       alpha .= n/sum(v) .*v;
   elseif state == "local"
-      l = distance(junction)
+      l = distance(v, n)
       alpha .= n .* l ./ sum(l);
   end
 
@@ -131,7 +131,7 @@ end
 
 
 """
-KineticMonteCarlo(v::BitVector, n::Integer, k_on::Vector{CellAdhesionFloat}, k_off::Vector{CellAdhesionFloat}, model::Model)     -NOT TESTED!!!!!
+KineticMonteCarlo(v::BitVector, n::Integer, k_on::Vector{CellAdhesionFloat}, k_off::Vector{CellAdhesionFloat}, model::Model)-NOT TESTED YET!!!!!
 
 """
 
