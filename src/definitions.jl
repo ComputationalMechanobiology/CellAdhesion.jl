@@ -1,25 +1,22 @@
-export Interface, Model
-
-"""
-    Interface()
-
-    `Interface` struct contains .
+export Bond, Interface, Model
 
 
 
-    # Fields
+struct Bond
+    state::Union{BitArray, Bool}      # False 0  = open, True 1 = closed
+    k_on::CellAdhesionFloat
+    k_off::CellAdhesionFloat
+    f::CellAdhesionFloat
+    history::Array{CellAdhesionFloat}
+end
 
-    - XX: 
-"""
+
 
 struct Interface
-    state::Bool              # If 0 it is broken, if 1 it is still close
+    bonds::Vector{Bond}             
     n::Integer                  
-    v::BitVector
-    k_on::Vector{CellAdhesionFloat}
-    k_off::Vector{CellAdhesionFloat}
-    f::Vector{CellAdhesionFloat}
-    history::Union{BitArray, Bool}
+    state::Union{BitArray, Bool}    # False = Open, True = closed
+    l::CellAdhesionFloat             # Distance between bonds
 end
 
 
