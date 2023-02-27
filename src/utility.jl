@@ -1,11 +1,11 @@
 
-export init_bonds, check_state, force
+export init_bonds, update_state, force
 
 
 """
-check_state(v::Interface)
+update_state(v::Interface)
 
-  Check if a junction is broken or still viable.
+  update if a junction is broken or still viable.
 
   Input parameters:
     - v: vector with the state of each single bond 
@@ -13,22 +13,32 @@ check_state(v::Interface)
     - state: true = broken, false = viable
 """
 
-function check_state(v::Interface)
+function update_state(v::Interface)
 
   @assert !isempty(v.bonds) "Bond vector in Interface is empty"
 
-  interface_v = getfield.(v.bonds, :state)
+  interface_v = getfield.(v.bonds, :state);
 
-  sum_v = sum(interface_v)
-  state = isequal(sum_v,0)
+  sum_v = sum(interface_v);
+  state = isequal(sum_v,0);
 
   setfield!(v, :state, !state)
+
+  return !state
   
 
 end
 
 
 
+
+function Base.setproperty!(x::Interface, s::Symbol, new_x::Union{Vector{CellAdhesionFloat}, Array{CellAdhesionFloat}})
+
+  for i = 1:1:x.n
+    setfield!(x.bonds[i], s, new_x[i])
+  end
+
+end
 
 
 

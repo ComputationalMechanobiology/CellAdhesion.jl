@@ -4,36 +4,28 @@ println("Testing utility.jl")
 println("===============================================")
 
 
-bond_1 = Bond(false,0.1,0.1,0.1, [0.1,0.1,0.1])
-bond_2 = Bond(true,0.1,0.1,0.1, [0.1,0.1,0.1])
-bond_3 = Bond(false,0.1,0.1,0.1, [0.1,0.1,0.1])
-bond_4 = Bond(true,0.1,0.1,0.1, [0.1,0.1,0.1])
+n = 6
+a = zeros(n) .>0.5
+b = rand(n)
+c = rand(n)
+d = rand(n)
 
-int_1 = Interface([bond_1, bond_2, bond_3, bond_4], 4, false, 1)
+int_1 = Interface(Bond.(a,b,c,d,false), false, n, 1.0)
 
-
-bond_5 = Bond(false,0.1,0.1,0.1, [0.1,0.1,0.1])
-bond_6 = Bond(false,0.1,0.1,0.1, [0.1,0.1,0.1])
-bond_7 = Bond(false,0.1,0.1,0.1, [0.1,0.1,0.1])
-bond_8 = Bond(false,0.1,0.1,0.1, [0.1,0.1,0.1])
-
-int_2 = Interface([bond_5, bond_6, bond_7, bond_8], 4, false, 1)
-
-#print(getfield.(int_1.bonds,:state))
+a = rand(n) .>0.5
+int_2 = Interface(Bond.(a,b,c,d,false), false, n, 1.0)
 
 
-function _check_state()
 
-    check_state(int_1)
-    check_state(int_2)
+function _update_state()
 
-    print(int_1)
-    print(int_2)
+    update_state(int_1)
+    update_state(int_2)
 
-    int_1.state[1] == true && int_2.state[1] == false
+    int_1.state == false && int_2.state == true
 
 end
-@test _check_state()
+@test _update_state()
 
 
 

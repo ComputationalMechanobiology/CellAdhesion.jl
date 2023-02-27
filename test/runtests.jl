@@ -1,6 +1,7 @@
 using Test 
-using CellAdhesion
 using Statistics
+using CellAdhesion
+
 
 const tol = (eps(CellAdhesion.CellAdhesionFloat))^(0.125)
 
