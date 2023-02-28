@@ -1,5 +1,96 @@
 
-export init_bonds, update_state, force
+export initiate_interface, update_state, force
+
+
+
+function initiate_interface(n::Union{Int, Vector{Int}}, l::Union{Float64, Vector{Float64}}, K::Float64, history::Union{Bool, Vector{Bool}})
+
+  check_length = length(n)
+  @assert length(l) == check_length "Length missmatch initialisation"
+  @assert length(K) == 1 "Length missmatch initialisation"
+  @assert length(history) == check_length "Length missmatch initialisation"
+
+  # Make variable types consistent with CellAdhesionFloat
+  if check_length == 1
+    n = convert(Int32, n)
+    l = convert(CellAdhesionFloat, l)
+  else
+    n = convert(Vector{Int32}, n)
+    l = convert(Vector{CellAdhesionFloat}, l)
+  end
+    K = convert(CellAdhesionFloat, K)
+
+  # If the junction has only one cluster
+  if check_length ==1
+
+    x = Interface(init_bonds(n, K, l, history), false, 0.0, false, n, l)
+  
+  else  # If the junction has multiple clusters
+
+    x = Interface(Vector{Interface}(undef,0), false, 0.0, false, n[1], l[1])
+    for i = 1:1:n[1]
+      push!(x.u, Interface(init_bonds(n[2],K, l[2], history[2]), false, 0.0, history[1], n[2], l[2]))
+    end
+
+  end
+  
+  return x
+
+end
+
+"""
+init_bonds(n::Integer, K::CellAdhesionFloat)
+
+  Generate the initial state of each bond within the cell junction.
+
+  Input parameters:
+    - n: number of bonds in the junction
+    - K: probability to start in a closed state
+  Output parameters:
+    - v: state vecotr of individual bonds (0 = open, 1 = closed)
+"""
+
+function init_bonds(n::Integer,K::CellAdhesionFloat, l::CellAdhesionFloat, history::Bool)
+
+    @assert n>0 "Number of bonds cannot be negative or equal to 0"
+    @assert (K>=0) && (K<=1) "Initialisation probability must be 0<=K<=1"
+
+    v = isless.(rand(n),K)
+
+    return Bond.(v, zeros(n), zeros(n), zeros(n), repeat([history], n))
+
+
+    return v
+
+end
+
+
+
+
+
+"""
+update_unit_state(v::Interface)
+
+  update unit junction state - function not exported, called by update_state()
+
+"""
+
+function update_unit_state(v::Interface)
+
+  # Get the state value for each bond
+  interface_v = getfield.(v.u, :state);
+
+  # If the sum of the state values is 0, the junction is broken 
+  sum_v = sum(interface_v);
+  state = isequal(sum_v,0);
+
+  # Update the state value of the junction
+  setfield!(v, :state, !state)
+
+  return !state
+  
+
+end
 
 
 """
@@ -8,26 +99,32 @@ update_state(v::Interface)
   update if a junction is broken or still viable.
 
   Input parameters:
-    - v: vector with the state of each single bond 
+    - v: Interface object 
   Output parameters:
-    - state: true = broken, false = viable
+    - v with updated state field
 """
+
+
 
 function update_state(v::Interface)
 
-  @assert !isempty(v.bonds) "Bond vector in Interface is empty"
+  @assert !isempty(v.u) "Unit vector in Interface is empty"
 
-  interface_v = getfield.(v.bonds, :state);
+  if typeof(v.u)== Vector{Interface}
 
-  sum_v = sum(interface_v);
-  state = isequal(sum_v,0);
+    for i = 1:1:v.n
+      # Update state value for each cluster
+      update_unit_state(v.u[i])
+    end
 
-  setfield!(v, :state, !state)
+  end
+    
+  update_unit_state(v)
 
-  return !state
-  
 
 end
+
+
 
 
 
@@ -61,27 +158,7 @@ end
 
 
 
-# """
-# init_bonds(n::Integer, K::CellAdhesionFloat)
 
-#   Generate the initial state of each bond within the cell junction.
-
-#   Input parameters:
-#     - n: number of bonds in the junction
-#     - K: probability to start in a closed state
-#   Output parameters:
-#     - v: state vecotr of individual bonds (0 = open, 1 = closed)
-# """
-
-# function init_bonds(n::Integer,K::CellAdhesionFloat)
-
-#     @assert n>0 "Number of bonds cannot be negative or equal to 0"
-#     @assert (K>=0) && (K<=1) "Initialisation probability must be 0<=K<=1"
-
-#     v = isless.(rand(n),K)
-#     return v
-
-# end
 
 
 

@@ -13,10 +13,12 @@ end
 
 
 mutable struct Interface
-    bonds::Vector{Bond}                               
-    state::Bool                            # False = Open, True = closed
+    u::Union{Vector{Bond}, Vector{Interface}}            # Unit element (it can be a bond struct or an interface struct)       
+    state::Bool                                          # False = Open, True = closed
+    f::CellAdhesionFloat
+    history::Union{Array{CellAdhesionFloat}, Bool} 
     const n::Integer
-    const l::CellAdhesionFloat             # Distance between bonds
+    const l::CellAdhesionFloat                           # Distance between bonds
 end
 
 
@@ -29,11 +31,4 @@ end
 
 
 
-function Base.setproperty!(x::Interface, s::Symbol, new_x::Union{Vector{CellAdhesionFloat}, Array{CellAdhesionFloat}})
-
-    for i = 1:1:x.n
-      setfield!(x.bonds[i], s, new_x[i])
-    end
-  
-  end
 
