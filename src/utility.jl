@@ -3,7 +3,7 @@ export initiate_interface, update_state, force
 
 
 
-function initiate_interface(n::Union{Int, Vector{Int}}, l::Union{Float64, Vector{Float64}}, K::Float64, history::Union{Bool, Vector{Bool}})
+function initiate_interface(n::Union{Int, Vector{Int}}, l::Union{Float64, Vector{Float64}}, K::Float64, F::Float64, history::Union{Bool, Vector{Bool}})
 
   check_length = length(n)
   @assert length(l) == check_length "Length missmatch initialisation"
@@ -19,17 +19,18 @@ function initiate_interface(n::Union{Int, Vector{Int}}, l::Union{Float64, Vector
     l = convert(Vector{CellAdhesionFloat}, l)
   end
     K = convert(CellAdhesionFloat, K)
+    F = convert(CellAdhesionFloat, F)
 
   # If the junction has only one cluster
   if check_length ==1
 
-    x = Interface(init_bonds(n, K, l, history), false, 0.0, false, n, l)
+    x = Interface(init_bonds(n, K, history), false, F, false, n, l)
   
   else  # If the junction has multiple clusters
 
-    x = Interface(Vector{Interface}(undef,0), false, 0.0, false, n[1], l[1])
+    x = Interface(Vector{Interface}(undef,0), false, F, false, n[1], l[1])
     for i = 1:1:n[1]
-      push!(x.u, Interface(init_bonds(n[2],K, l[2], history[2]), false, 0.0, history[1], n[2], l[2]))
+      push!(x.u, Interface(init_bonds(n[2], K, history[2]), false, 0.0, history[1], n[2], l[2]))
     end
 
   end
@@ -50,7 +51,7 @@ init_bonds(n::Integer, K::CellAdhesionFloat)
     - v: state vecotr of individual bonds (0 = open, 1 = closed)
 """
 
-function init_bonds(n::Integer,K::CellAdhesionFloat, l::CellAdhesionFloat, history::Bool)
+function init_bonds(n::Integer,K::CellAdhesionFloat, history::Bool)
 
     @assert n>0 "Number of bonds cannot be negative or equal to 0"
     @assert (K>=0) && (K<=1) "Initialisation probability must be 0<=K<=1"
@@ -59,13 +60,9 @@ function init_bonds(n::Integer,K::CellAdhesionFloat, l::CellAdhesionFloat, histo
 
     return Bond.(v, zeros(n), zeros(n), zeros(n), repeat([history], n))
 
-
     return v
 
 end
-
-
-
 
 
 """
@@ -113,7 +110,6 @@ function update_state(v::Interface)
   if typeof(v.u)== Vector{Interface}
 
     for i = 1:1:v.n
-      # Update state value for each cluster
       update_unit_state(v.u[i])
     end
 
@@ -124,15 +120,17 @@ function update_state(v::Interface)
 
 end
 
+"""
+Base.setproperty! 
+
+Definition to update Interface struct fields
+"""
 
 
-
-
-
-function Base.setproperty!(x::Interface, s::Symbol, new_x::Union{Vector{CellAdhesionFloat}, Array{CellAdhesionFloat}})
+function Base.setproperty!(x::Interface, s::Symbol, new_x::Vector{CellAdhesionFloat})
 
   for i = 1:1:x.n
-    setfield!(x.bonds[i], s, new_x[i])
+    setfield!(x.u[i], s, new_x[i])
   end
 
 end
@@ -141,129 +139,134 @@ end
 
 
 
+"""
+distance(v::BitVector, n::Integer)
+
+  Compute the distance of each from its two closest closed link on each side. 
+  Used to compute a "local" load distributions across closed bonds.
+  Periodic bondary conditions for the edges.
+
+  Input parameters:
+    - v: vector with the state of each single bond
+    - n: number of bonds in the junction
+  Output parameters:
+    - l: vector of CellAdhesionFloat containing the distance for each closed bond
+"""
+
+function distance(v::BitVector, n::Integer)
+
+  @assert !isempty(v) "Bond state vector in Interface is empty"
+
+  l = zeros(n);
+  if sum(v) == 0
+       l .= zeros(n);
+  elseif sum(v) ==1
+      temp = findall(x->x==1, v)
+      l[temp[1]] = n;        
+  elseif sum(v) == 2
+      temp = findall(x->x==1, v)
+      l[temp[1]] = n;
+      l[temp[2]] = n;    
+  else
+      temp = findall(x->x==1, v)
+      gaps = diff(temp);
+      dist = zeros(size(temp));
+      dist[2:end-1] = gaps[2:end] .+ gaps[1:end-1];
+      dist[1] = n - temp[end] + temp[2];
+      dist[end] = n - temp[end-1] + temp[1];
+      l[temp] .= dist;
+  end
+
+  return convert(Vector{CellAdhesionFloat}, l)
+
+end
 
 
 
+function force(v::Interface, model::Model)
+
+  @assert v.f>=0 "Applied stress to junction must be positive or equal to zero"
 
 
+  if typeof(v.u)== Vector{Interface}
 
+    
+    force_global(v, v.f)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# """
-# distance(v::BitVector, n::Integer)
-
-#   Compute the distance of each from its two closest closed link on each side. 
-#   Used to compute a "local" load distributions across closed bonds.
-#   Periodic bondary conditions for the edges.
-
-#   Input parameters:
-#     - v: vector with the state of each single bond
-#     - n: number of bonds in the junction
-#   Output parameters:
-#     - l: vector of CellAdhesionFloat containing the distance for each closed bond
-# """
-
-# function distance(v::BitVector, n::Integer)
-
-#   @assert !isempty(v) "Bond state vector in Interface is empty"
-
-#   l = zeros(n);
-#   if sum(v) == 0
-#        l .= zeros(n);
-#   elseif sum(v) ==1
-#       temp = findall(x->x==1, v)
-#       l[temp[1]] = n;        
-#   elseif sum(v) == 2
-#       temp = findall(x->x==1, v)
-#       l[temp[1]] = n;
-#       l[temp[2]] = n;    
-#   else
-#       temp = findall(x->x==1, v)
-#       gaps = diff(temp);
-#       dist = zeros(size(temp));
-#       dist[2:end-1] = gaps[2:end] .+ gaps[1:end-1];
-#       dist[1] = n - temp[end] + temp[2];
-#       dist[end] = n - temp[end-1] + temp[1];
-#       l[temp] .= dist;
-#   end
-
-#   return convert(Vector{CellAdhesionFloat}, l)
-
-# end
-
-
-# """
-# force(v::BitVector, n::Integer, model::Model, s::CellAdhesionFloat)
-
-#   Compute the force on each link. 
-#   Two options are available:
-#    - global: equal distribution across all closed bonds
-#    - local: inhomogeneous distribution of load accounting fro the distance to its nearest closed neighbor on both sides. 
-
-#    If no load parameter is specified, global is used by default
-
-#   Input parameters:
-#     - v: vector with the state of each single bond
-#     - n: number of bonds in the junction
-#     - model: Model structure containing the type of load distribution: "local" or "global" (Model.param)
-#     - s: applied stress to the junction (CellAdhesionFloat type)
-#   Output parameters:
-#     - f: (vector) force applied to each bond 
-# """
-
-# function force(v::BitVector, n::Integer, model::Model, s::CellAdhesionFloat)
-
-#   @assert !isempty(v) "Bond state vector in Interface is empty"
-
-#   alpha = zeros(n);
+    for i = 1:1:v.n
+      force_global(v.u[i], v.u[i].f)
+    end
   
-#   state = model.param["load"]
+  elseif typeof(v.u) == Vector{Bond}
+
+    force_global(v, v.f)
+
+  end
+
+end
 
 
-#   if state == "global"
-#       alpha .= n/sum(v) .*v;
-#   elseif state == "local"
-#       l = distance(v, n)
-#       alpha .= n .* l ./ sum(l);
-#   end
 
-#   return convert(Vector{CellAdhesionFloat}, alpha .* s)
+"""
+force(v::BitVector, n::Integer, model::Model, s::CellAdhesionFloat)
 
-# end
+  Compute the force on each link. 
+  Two options are available:
+   - global: equal distribution across all closed bonds
+   - local: inhomogeneous distribution of load accounting fro the distance to its nearest closed neighbor on both sides. 
 
+   If no load parameter is specified, global is used by default
 
-# """
-# KineticMonteCarlo(v::BitVector, n::Integer, k_on::Vector{CellAdhesionFloat}, k_off::Vector{CellAdhesionFloat}, model::Model)-NOT TESTED YET!!!!!
+  Input parameters:
+    - v: vector with the state of each single bond
+    - n: number of bonds in the junction
+    - model: Model structure containing the type of load distribution: "local" or "global" (Model.param)
+    - s: applied stress to the junction (CellAdhesionFloat type)
+  Output parameters:
+    - f: (vector) force applied to each bond 
+"""
 
-# """
+function force_global(v::Interface, f::CellAdhesionFloat)
 
-# function KineticMonteCarlo(v::BitVector, n::Integer, k_on::Vector{CellAdhesionFloat}, k_off::Vector{CellAdhesionFloat}, model::Model)
+  interface_v = getfield.(v.u, :state);
+  update_f = interface_v .* f./sum(interface_v)
+  setproperty!(v, :f, convert(Vector{CellAdhesionFloat},update_f))
 
-#   random = rand(n);
-#   v_temp = copy(v);
-
-#   bond_events = findall(x->x==1, ((k_on.*model.param["dt"]) .>random));
-#   v_temp[bond_events] .= 1;
-#   unbond_events = findall(x->x==1, ((k_off.*model.param["dt"]) .>random));
-#   v_temp[unbond_events] .= 0;
-
-
-#   return v_temp
+end
 
 
-# end
+function force_local(v::BitVector, n::Integer)
+
+  alpha = zeros(n);
+
+  l = distance(v, n)
+  alpha .= n .* l ./ sum(l);
+
+  return convert(Vector{CellAdhesionFloat}, alpha)
+
+end
+
+
+
+"""
+KineticMonteCarlo(v::BitVector, n::Integer, k_on::Vector{CellAdhesionFloat}, k_off::Vector{CellAdhesionFloat}, model::Model)-NOT TESTED YET!!!!!
+
+"""
+
+function KineticMonteCarlo(v::BitVector, n::Integer, k_on::Vector{CellAdhesionFloat}, k_off::Vector{CellAdhesionFloat}, model::Model)
+
+  random = rand(n);
+  v_temp = copy(v);
+
+  bond_events = findall(x->x==1, ((k_on.*model.param["dt"]) .>random));
+  v_temp[bond_events] .= 1;
+  unbond_events = findall(x->x==1, ((k_off.*model.param["dt"]) .>random));
+  v_temp[unbond_events] .= 0;
+
+
+  return v_temp
+
+
+end
 
 

@@ -6,7 +6,7 @@ mutable struct Bond
     state::Union{BitArray, Bool}      # False 0  = open, True 1 = closed
     k_on::CellAdhesionFloat
     k_off::CellAdhesionFloat
-    f::CellAdhesionFloat
+    f::CellAdhesionFloat              # Force applied to the bond
     history::Union{Array{CellAdhesionFloat}, Bool}
 end
 
@@ -15,7 +15,7 @@ end
 mutable struct Interface
     u::Union{Vector{Bond}, Vector{Interface}}            # Unit element (it can be a bond struct or an interface struct)       
     state::Bool                                          # False = Open, True = closed
-    f::CellAdhesionFloat
+    f::CellAdhesionFloat                                 # Force applied to the Interface
     history::Union{Array{CellAdhesionFloat}, Bool} 
     const n::Integer
     const l::CellAdhesionFloat                           # Distance between bonds
