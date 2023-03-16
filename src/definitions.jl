@@ -23,6 +23,7 @@ end
 
 
 struct Model
+    f::Dict
     k_on::Dict
     k_off::Dict
     param::Dict

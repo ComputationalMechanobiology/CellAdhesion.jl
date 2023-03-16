@@ -20,16 +20,12 @@ end
 
 function _initiate_interface()
 
-    v4 = initiate_interface([2, 3], [1.0, 1.1], 0.9, 15.0, [true, true])
+    v4 = initiate_interface([2, 3], [1.0, 0.1], 0.9, 15.0, [true, true])
 
     (length(v4.u)==2) && (length(v4.u[1].u)==3) && (v4.f == 15.0)
 
 end
 @test _initiate_interface()
-
-
-
-
 
 
 function _update_state_bonds()
@@ -50,9 +46,9 @@ end
 
 function _update_state_clusters()
 
-    int_1 = initiate_interface([2, 3], [1.0, 1.1], 0.0, 15.0, [true, true])
-    int_2 = initiate_interface([2, 3], [1.0, 1.1], 1.0, 15.0,[true, true])
-    int_3 = initiate_interface([2, 3], [1.0, 1.1], 0.5, 15.0, [true, true])
+    int_1 = initiate_interface([2, 3], [1.0, 0.1], 0.0, 15.0, [true, true])
+    int_2 = initiate_interface([2, 3], [1.0, 0.1], 1.0, 15.0,[true, true])
+    int_3 = initiate_interface([2, 3], [1.0, 0.1], 0.5, 15.0, [true, true])
 
     update_state(int_1)
     update_state(int_2)
@@ -81,7 +77,7 @@ end
 
 function _check_force_bonds_global(tol)
 
-    model = Model(Dict("model"=>"k_on_constant"), Dict("model"=>"k_off_slip"), Dict("load"=>"global"))
+    model = Model(Dict("model"=>force_global),Dict(), Dict(), Dict())
 
     n = 10
     l = 1.0
@@ -90,9 +86,9 @@ function _check_force_bonds_global(tol)
     v3 = Interface(Bond.([false,true,true,false,false,false,false,true,false,true], zeros(n), zeros(n), zeros(n), repeat([false], n)), false, 10.0, false, n, l)
 
 
-    force(v1, model)
-    force(v2, model)
-    force(v3, model)
+    force(v1, model.f["model"])
+    force(v2, model.f["model"])
+    force(v3, model.f["model"])
 
     f1 = getfield.(v1.u, :f)
     f2 = getfield.(v2.u, :f)
@@ -106,14 +102,14 @@ end
 
 
 
-function _check_force_clusters(tol)
+function _check_force_clusters_global(tol)
 
-    model = Model(Dict("model"=>"k_on_constant"), Dict("model"=>"k_off_slip"), Dict("load"=>"global"))
+    model = Model(Dict("model"=>force_global),Dict(), Dict(), Dict())
 
 
-    int_1 =  initiate_interface([2, 3], [1.0, 1.1], 1.0, 18.0, [true, true])
+    int_1 =  initiate_interface([2, 3], [1.0, 0.1], 1.0, 18.0, [true, true])
     update_state(int_1)
-    force(int_1, model)
+    force(int_1, model.f["model"])
     
     f_check_1 = sum(getfield.(int_1.u, :f))
     f_check_2 = 0
@@ -128,7 +124,7 @@ function _check_force_clusters(tol)
     int_2 = Interface([v1, v2], false, 60.0, false, 2, l)
 
     update_state(int_2)
-    force(int_2, model)
+    force(int_2, model.f["model"])
     
     f2_check_1 = sum(getfield.(int_2.u, :f))
     f2_check_2 = 0
@@ -138,12 +134,73 @@ function _check_force_clusters(tol)
 
     (int_1.f == f_check_1) && (int_1.f == f_check_2) &&  (int_2.f == f2_check_1) && (int_2.f == f2_check_2) 
 
-
-
 end
 
 @test _check_force_clusters_global(tol)
 
 
+function _check_force_bonds_local(tol)
+
+    model = Model(Dict("model"=>force_local),Dict(), Dict(), Dict())
+
+    n = 10
+    l = 1.0
+    v1 = initiate_interface(10, 1.0, 1.0, 10.0, true)
+    v2 = Interface(Bond.([false,true,false,true,false,false,false,false,false,false], zeros(n), zeros(n), zeros(n), repeat([false], n)), false, 10.0, false, n, l)
+    v3 = Interface(Bond.([false,true,true,false,false,false,false,true,false,true], zeros(n), zeros(n), zeros(n), repeat([false], n)), false, 10.0, false, n, l)
 
 
+    force(v1, model.f["model"])
+    force(v2, model.f["model"])
+    force(v3, model.f["model"])
+
+    f1 = getfield.(v1.u, :f)
+    f2 = getfield.(v2.u, :f)
+    f3 = getfield.(v3.u, :f)
+
+    (f1 == repeat([1.0], 10)) && (f2==[0.0, 5.0, 0.0, 5.0, 0.0, 0.0,0.0,0.0,0.0,0.0]) && (f3==[0.0, 1.5, 3.0, 0.0, 0.0, 0.0,0.0, 3.5,0.0, 2.0])
+
+end
+
+@test _check_force_bonds_local(tol)
+
+
+
+
+function _check_force_clusters_local(tol)
+
+    model = Model(Dict("model"=>force_local),Dict(), Dict(), Dict())
+
+
+    int_1 =  initiate_interface([2, 3], [1.0, 0.1], 1.0, 18.0, [true, true])
+    update_state(int_1)
+    force(int_1, model.f["model"])
+    
+    f_check_1 = sum(getfield.(int_1.u, :f))
+    f_check_2 = 0
+    for i = 1:1:int_1.n
+        f_check_2 = f_check_2 + sum(getfield.(int_1.u[i].u, :f))
+    end
+
+    n = 5
+    l = 1
+    v1 = Interface(Bond.([false,true,true, false, true], zeros(n), zeros(n), zeros(n), repeat([false], n)), false, 0.0, false, n, l)
+    v2 = Interface(Bond.([false,true,true, true, true], zeros(n), zeros(n), zeros(n), repeat([false], n)), false, 0.0, false, n, l)
+    int_2 = Interface([v1, v2], false, 60.0, false, 2, l)
+
+    update_state(int_2)
+    force(int_2, model.f["model"])
+    
+    f2_check_1 = sum(getfield.(int_2.u, :f))
+    f2_check_2 = 0
+    for i = 1:1:int_2.n
+        f2_check_2 = f2_check_2 + sum(getfield.(int_2.u[i].u, :f))
+    end
+
+    print(int_2)
+
+    (int_1.f == f_check_1) && (int_1.f == f_check_2) &&  (int_2.f == f2_check_1) && (int_2.f == f2_check_2) 
+
+end
+
+@test _check_force_clusters_local(tol)

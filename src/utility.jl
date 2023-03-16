@@ -1,5 +1,5 @@
 
-export initiate_interface, update_state, force
+export initiate_interface, update_state, force, force_global, force_local
 
 
 
@@ -137,8 +137,6 @@ end
 
 
 
-
-
 """
 distance(v::BitVector, n::Integer)
 
@@ -182,49 +180,41 @@ function distance(v::BitVector, n::Integer)
 end
 
 
-
-function force(v::Interface, model::Model)
-
-  @assert v.f>=0 "Applied stress to junction must be positive or equal to zero"
-
-
-  if typeof(v.u)== Vector{Interface}
-
-    
-    force_global(v, v.f)
-
-    for i = 1:1:v.n
-      force_global(v.u[i], v.u[i].f)
-    end
-  
-  elseif typeof(v.u) == Vector{Bond}
-
-    force_global(v, v.f)
-
-  end
-
-end
-
-
-
 """
-force(v::BitVector, n::Integer, model::Model, s::CellAdhesionFloat)
+force(v::Interface, model::Model, s::CellAdhesionFloat)
 
   Compute the force on each link. 
   Two options are available:
    - global: equal distribution across all closed bonds
    - local: inhomogeneous distribution of load accounting fro the distance to its nearest closed neighbor on both sides. 
 
-   If no load parameter is specified, global is used by default
+   This is defined in the model.f variable
 
   Input parameters:
-    - v: vector with the state of each single bond
-    - n: number of bonds in the junction
-    - model: Model structure containing the type of load distribution: "local" or "global" (Model.param)
-    - s: applied stress to the junction (CellAdhesionFloat type)
+    - v: Interface structure
+    - model: Model structure containing the type of load distribution: "local" or "global" (Model.f)
   Output parameters:
-    - f: (vector) force applied to each bond 
+    - Updated Interface with force applied to each link
 """
+
+
+function force(v::Interface, force_type)
+
+  @assert v.f>=0 "Applied stress to junction must be positive or equal to zero"
+
+  force_type(v, v.f)
+
+  if typeof(v.u)== Vector{Interface}
+    
+    for i = 1:1:v.n
+      force_type(v.u[i], v.u[i].f)
+    end
+  
+  end
+
+end
+
+
 
 function force_global(v::Interface, f::CellAdhesionFloat)
 
@@ -235,14 +225,12 @@ function force_global(v::Interface, f::CellAdhesionFloat)
 end
 
 
-function force_local(v::BitVector, n::Integer)
+function force_local(v::Interface, f::CellAdhesionFloat)
 
-  alpha = zeros(n);
-
-  l = distance(v, n)
-  alpha .= n .* l ./ sum(l);
-
-  return convert(Vector{CellAdhesionFloat}, alpha)
+  interface_v = getfield.(v.u, :state);
+  l = distance(interface_v, v.n)
+  update_f = l ./ sum(l) .*f;
+  setproperty!(v, :f, convert(Vector{CellAdhesionFloat},update_f))
 
 end
 
