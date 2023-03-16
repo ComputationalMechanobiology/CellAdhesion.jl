@@ -1,33 +1,47 @@
-# export init_junction, one_step, junction_simulation
-
-# function init_junction(n::Integer, model::Model; history::Bool = false)
+export interface  #, one_step, junction_simulation
 
 
-#     K = model.k_on["k_on_0"] / (model.k_on["k_on_0"] + model.k_off["k_off_0"])
+function interface(n::Union{Int, Vector{Int}}, l::Union{Float64, Vector{Float64}}, F::Float64, history::Union{Bool, Vector{Bool}}, model::Model)
 
-#     # if !haskey(model.param, "load")
-#     #     model.param["load"] = "global"
-#     # end
-#     # if !haskey(model.param, "dt")
-#     #     model.param["dt"] = 0.1
-#     # end
+    check_length = length(n)
+    @assert length(l) == check_length "Length missmatch initialisation"
+    @assert length(history) == check_length "Length missmatch initialisation"
 
-#     v = init_bonds(n, convert(CellAdhesionFloat, K))
-#     state = check_state(v)
-#     f = force(v, n, model, convert(CellAdhesionFloat, 0))
 
-#     if history == false
-#         junction = Interface(state, n, v, [], [], f, false)
-#     else
-#         junction = Interface(state, n, v, [], [], f, v)
-#     end
-
-#     junction = k_rate_junction(junction, model, model.k_on["model"])
-#     junction = k_rate_junction(junction, model, model.k_off["model"])
-
-#     return junction
-
-# end
+    K = model.k_on["k_on_0"] / (model.k_on["k_on_0"] + model.k_off["k_off_0"])
+  
+    # Make variable types consistent with CellAdhesionFloat
+    if check_length == 1
+      n = convert(Int32, n)
+      l = convert(CellAdhesionFloat, l)
+    else
+      n = convert(Vector{Int32}, n)
+      l = convert(Vector{CellAdhesionFloat}, l)
+    end
+      K = convert(CellAdhesionFloat, K)
+      F = convert(CellAdhesionFloat, F)
+  
+    # If the junction has only one cluster
+    if check_length ==1
+  
+      x = Interface(init_bonds(n, K, history), false, F, false, n, l)
+    
+    else  # If the junction has multiple clusters
+  
+      x = Interface(Vector{Interface}(undef,0), false, F, false, n[1], l[1])
+      for i = 1:1:n[1]
+        push!(x.u, Interface(init_bonds(n[2], K, history[2]), false, 0.0, history[1], n[2], l[2]))
+      end
+  
+    end
+  
+    update_state(x)
+    force(x, model)
+  
+    return x
+  
+  end
+  
 
 
 

@@ -9,7 +9,7 @@ using Plots
 
 include("definitions.jl")
 include("utility.jl")
-include("rates.jl")
+include("dynamics.jl")
 include("processing.jl")
 
 end # module
