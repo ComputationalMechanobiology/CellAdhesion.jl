@@ -14,8 +14,13 @@ function _interface_bonds()
     v2 = interface(n, 1.0, 10.0, true, model2)
     v3 = interface(n, 1.0, 15.0, true, model3)
 
-    ((getproperty.(v1.u[:], :state) == zeros(n)) && (getproperty.(v2.u[:], :state) == ones(n)) && (typeof(getproperty.(v3.u[:], :state)) == BitVector) && (v1.f == 15.0) 
-        && (v1.state == false) && (v2.state==true) && (v3.state == true))
+    ((getproperty.(v1.u[:], :state) == zeros(n)) 
+      && (getproperty.(v2.u[:], :state) == ones(n)) 
+      && (typeof(getproperty.(v3.u[:], :state)) == BitVector) 
+      && (v1.f == 15.0) 
+      && (v1.state == false) 
+      && (v2.state==true) 
+      && (v3.state == true))
 
 end
 @test _interface_bonds()
@@ -27,7 +32,9 @@ function _interface_cluster()
     model = Model(Dict("model"=>force_global), Dict("model"=>k_on_constant, "k_on_0"=>0.2), Dict("model"=>k_off_slip, "k_off_0"=>0.8, "f_1e"=>1), Dict())
     v4 = interface([2, 3], [1.0, 0.1], 15.0, [true, true], model)
 
-    (length(v4.u)==2) && (length(v4.u[1].u)==3) && (v4.f == 15.0)
+    ((length(v4.u)==2) 
+      && (length(v4.u[1].u)==3) 
+      && (v4.f == 15.0))
 
 end
 @test _interface_cluster()

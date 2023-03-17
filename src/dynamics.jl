@@ -116,56 +116,54 @@ end
 
 function k_rate_junction(v::Interface, model::Model)
 
-    #@assert isempty(model.k_on["model"]) "k_on rate model not defined"
-    #@assert isempty(model.k_off["model"]) "k_off rate model not defined"
+  @assert (model.k_on["model"] in list_k_models) "k_on rate model not defined"
+  @assert (model.k_off["model"] in list_k_models) "k_off rate model not defined"
+  
+  if typeof(v.u)==Vector{Bond}
+    model.k_on["model"](v, model)
+    model.k_off["model"](v, model)
+  else
 
-
-    if typeof(v.u)==Vector{Bond}
-      model.k_on["model"](v, model)
-      #model.k_off["model"](v, model)
-    else
-
-      for i=1:1:v.n
-        model.k_on["model"](v.u[i], model)
-        #model.k_off["model"](v.u[i], model)
-      end
-
+    for i=1:1:v.n
+      model.k_on["model"](v.u[i], model)
+      model.k_off["model"](v.u[i], model)
     end
+
+  end
     
 end
 
 
 """
-k_off_slip(junction::Interface, model::Model)
+k_off_slip(v::Interface, model::Model)
 
   Compute the probability of unbinding of each closed bonds within the junction. 
   Force-dependent behaviour of the unbinding probability is described by the Bell model. 
 
   Input parameters:
-    - junction: Interface variable
+    - v: Interface variable
     - model: Model varible containing the unbinding parameters (k_off_0 = rate of unbinding with no force applied, 
                                                                 f_1e = threshold force exponential decay)
   Output parameters:
     - k_off: Unbinding probability for each bond
 """
 
-function k_off_slip(junction::Interface, model::Model)
+function k_off_slip(v::Interface, model::Model)
 
-   k_off = model.k_off["k_off_0"] .* exp.(junction.f ./ model.k_off["f_1e"]) .* junction.v;
-
-   return Interface(junction.state, junction.n, junction.v, junction.k_on, convert(Vector{CellAdhesionFloat}, k_off), junction.f, junction.history)
+  update_k_off = model.k_off["k_off_0"] .* exp.(getfield.(v.u, :f) ./ model.k_off["f_1e"]) .* getfield.(v.u, :state);
+  setproperty!(v, :k_off, convert(Vector{CellAdhesionFloat},update_k_off))
 
 end
 
 
 """
-k_on_constant(junction::Interface, model::Model)
+k_on_constant(v::Interface, model::Model)
 
   Compute the probability of binding of each open bond within the junction. 
   Force-dependent behaviour of the unbinding probability is described by the Bell model. 
 
   Input parameters:
-    - junction: Interface variable
+    - v: Interface variable
     - model: Model varible containing the binding parameters (k_on_0 = rate of binding with no force applied)
   Output parameters:
     - junction: binding probability for each bond
@@ -178,5 +176,8 @@ function k_on_constant(v::Interface, model::Model)
 
 end
 
-# list_k_models = [k_off_slip, 
-#                  k_on_constant]
+
+# Add here new k_on or k_off functions models!
+
+list_k_models = [k_off_slip, 
+                 k_on_constant]

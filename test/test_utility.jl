@@ -21,7 +21,9 @@ function _update_state_bonds()
     update_state(int_2)
     update_state(int_3)
 
-    int_1.state == false && int_2.state == true && int_3.state == true
+    ((int_1.state == false)
+      && (int_2.state == true)
+      && (int_3.state == true))
 
 end
 @test _update_state_bonds()
@@ -43,7 +45,12 @@ function _update_state_clusters()
     update_state(int_3)
 
 
-    (int_1.state == false) && (int_2.state == true) && (int_3.state == true) && (int_1.u[1].state ==false) && (int_1.u[2].state ==false) && (int_2.u[1].state ==true)
+    ((int_1.state == false) 
+      && (int_2.state == true) 
+      && (int_3.state == true) 
+      && (int_1.u[1].state ==false) 
+      && (int_1.u[2].state ==false) 
+      && (int_2.u[1].state ==true))
 
 end
 @test _update_state_clusters()
