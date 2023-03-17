@@ -130,7 +130,7 @@ KineticMonteCarlo(v::Interface, dt::CellAdhesionFloat)
 function KineticMonteCarlo_unit(v::Interface, dt::CellAdhesionFloat)
 
   random = rand(v.n);
-  v_temp = repeat([false],v.n);
+  v_temp = getfield.(v.u, :state);
 
   bond_events = findall(x->x==1, (getfield.(v.u, :k_on) .* dt .>random));
   v_temp[bond_events] .= true;

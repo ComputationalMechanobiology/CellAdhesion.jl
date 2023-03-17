@@ -1,4 +1,4 @@
-export interface, one_step#, junction_simulation
+export interface, one_step, force_increment, junction_simulation
 
 
 function interface(n::Union{Int, Vector{Int}}, l::Union{Float64, Vector{Float64}}, F::Float64, history::Union{Bool, Vector{Bool}}, model::Model)
@@ -50,60 +50,81 @@ function one_step(v::Interface, model::Model)
 
   update_state(v)
 
-  if v.state == true
+  if v.state == false
       print("Broken junction")
   else
       KineticMonteCarlo(v,model)
       update_state(v)
       force(v, model)
-      k_rate_junction(junction, model.param["dt"])
+      k_rate_junction(v, model)
   end
+
+end
+
+function force_increment(v::Interface, model::Model, F::CellAdhesionFloat)
+
+  setfield!(v, :f, F)
+  force(v, model)
+  k_rate_junction(v, model)
+
 
 end
 
 
 
 
-# function junction_simulation(junction::Interface, model::Model, stress::Union{Array{Float64}, Float64}; max_steps::Integer = 1000, verbose::Bool = false)
+function junction_simulation(junction::Interface, model::Model, force::Union{Array{Float64}, Float64}; max_steps::Integer = 1000, verbose::Bool = false)
 
-#     step = 0
-#     stress_break = 0
-#     time_break = 0
+    step = 0
+    force_break = 0
+    time_break = 0
 
-#     # Constant stress
-#     if typeof(stress) == Float64
+    if typeof(force) == Float64
+      force = convert(CellAdhesionFloat,force)
+    else
+      force = convert(Vector{CellAdhesionFloat},force)
+    end
 
-#         while (step <= max_steps) && (junction.state == false)
-#             step = step + 1
-#             junction = one_step(junction, model, convert(CellAdhesionFloat, stress))
-#         end
+    # Constant force
+    if typeof(force) == CellAdhesionFloat
+      force_increment(junction, model, force)
 
-#         stress_break = stress
+      #print(junction.u, "\n")
 
-#     else 
-#         # Arbitrary stress history applied to the junction
-#         @assert max_step<=length(stress) "Maximum number of steps exceed stress vector length"
+      while (step <= max_steps) && (junction.state == true)
+          step = step + 1
+          one_step(junction, model)
+      end
 
-#         while (step <= max_steps) && (junction.state == false)
-#             step = step + 1
-#             junction = one_step(junction, model, convert(CellAdhesionFloat, stress[step]))
-#         end
+      force_break = force
 
-#         stress_break = stress[step]
+    else 
 
-#     end
+      # Arbitrary force history applied to the junction
+      @assert max_step<=length(force) "Maximum number of steps exceed force vector length"
 
-#     if verbose == true
-#         if junction.state == true
-#             print("Junction broken")
-#         elseif step > max_steps
-#             print("Maximum number of iterations reached")
-#         end
-#     end
+      while (step <= max_steps) && (junction.state == true)
+          step = step + 1
+          force_increment(junction, model, force[i])
+          one_step(junction, model)
+      end
 
-#     time_break = model.param["dt"]*step
+      force_break = force[step]
 
-#     return junction, stress_break, time_break, step
+    end
+
+    if verbose == true
+        if junction.state == false
+            print("Junction broken")
+        elseif step > max_steps
+            print("Maximum number of iterations reached")
+        end
+    end
+
+    time_break = model.param["dt"]*step
 
 
-# end
+    return force_break, time_break, step
+
+
+end

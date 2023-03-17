@@ -56,7 +56,7 @@ function _check_force_clusters_global(tol)
     model = Model(Dict("model"=>force_global),Dict("model"=>k_on_constant, "k_on_0"=>1.0), Dict("model"=>k_off_slip, "k_off_0"=>0.0, "f_1e"=>1), Dict("dt"=>convert(CellAdhesionFloat,1e-2)))
 
 
-    int_1 =  interface([2, 3], [1.0, 0.1], 18.0, [true, true], model)
+    int_1 =  interface([2, 3], [1.0, 0.1], 18.0, [false, false], model)
     update_state(int_1)
     force(int_1, model)
     
@@ -124,7 +124,7 @@ end
 function _check_force_clusters_local(tol)
 
     model = Model(Dict("model"=>force_global),Dict("model"=>k_on_constant, "k_on_0"=>1.0), Dict("model"=>k_off_slip, "k_off_0"=>0.0, "f_1e"=>1), Dict("dt"=>convert(CellAdhesionFloat,1e-2)))
-    int_1 =  interface([2, 3], [1.0, 0.1], 18.0, [true, true], model)
+    int_1 =  interface([2, 3], [1.0, 0.1], 18.0, [false, false], model)
     update_state(int_1)
     force(int_1, model)
     
