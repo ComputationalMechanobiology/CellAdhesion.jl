@@ -1,5 +1,5 @@
 
-export force, force_global, force_local, k_on_constant, k_off_slip
+export force, force_global, force_local, k_on_constant, k_off_slip, k_rate_junction
 
 
 
@@ -114,14 +114,24 @@ end
 
 #------------------ K RATE -------------------------------------
 
-function k_rate_junction(junction::Interface, model::Model)
+function k_rate_junction(v::Interface, model::Model)
 
-    @assert isempty(model.k_on["model"]) "k_on rate model not defined"
-    @assert isempty(model.k_off["model"]) "k_off rate model not defined"
+    #@assert isempty(model.k_on["model"]) "k_on rate model not defined"
+    #@assert isempty(model.k_off["model"]) "k_off rate model not defined"
 
-    junction = k_function(junction, model)  
-    return junction
 
+    if typeof(v.u)==Vector{Bond}
+      model.k_on["model"](v, model)
+      #model.k_off["model"](v, model)
+    else
+
+      for i=1:1:v.n
+        model.k_on["model"](v.u[i], model)
+        #model.k_off["model"](v.u[i], model)
+      end
+
+    end
+    
 end
 
 
@@ -161,11 +171,10 @@ k_on_constant(junction::Interface, model::Model)
     - junction: binding probability for each bond
 """
 
-function k_on_constant(junction::Interface, model::Model)
+function k_on_constant(v::Interface, model::Model)
 
-  k_on = model.k_on["k_on_0"] *(ones(junction.n) .- junction.v);
-  
-  return Interface(junction.state, junction.n, junction.v, convert(Vector{CellAdhesionFloat}, k_on), junction.k_off, junction.f, junction.history)
+  update_k_on = model.k_on["k_on_0"] .* (ones(v.n) .- getfield.(v.u, :state));
+  setproperty!(v, :k_on, convert(Vector{CellAdhesionFloat},update_k_on))
 
 end
 

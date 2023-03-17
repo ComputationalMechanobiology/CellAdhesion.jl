@@ -37,6 +37,7 @@ function interface(n::Union{Int, Vector{Int}}, l::Union{Float64, Vector{Float64}
   
     update_state(x)
     force(x, model)
+    #k_rate_junction(junction, model)
   
     return x
   
@@ -45,31 +46,18 @@ function interface(n::Union{Int, Vector{Int}}, l::Union{Float64, Vector{Float64}
 
 
 
-# function one_step(junction::Interface, model::Model, s::CellAdhesionFloat)
+# function one_step(v::Interface, model::Model)
 
-#     if junction.state == true
-#         print("Broken junction")
-#         return junction
-#     else
-#         v = KineticMonteCarlo(junction.v, junction.n, junction.k_on, junction.k_off, model)
-#         state = check_state(v)
-#         f = force(v, junction.n, model, convert(CellAdhesionFloat, s))
+#   update_state(v)
 
-#         if junction.history == false
-#             history = false
-#         else junction.history != false
-#             history = hcat(junction.history, v)          
-#         end
-
-#         junction = Interface(state, junction.n, v, junction.k_on, junction.k_off, f, history)
-
-#         junction = k_rate_junction(junction, model, model.k_on["model"])
-#         junction = k_rate_junction(junction, model, model.k_off["model"])
-
-
-#         return junction
-
-#     end
+#   if v.state == true
+#       print("Broken junction")
+#   else
+#       KineticMonteCarlo(v,model)
+#       update_state(v)
+#       force(v, model)
+#       k_rate_junction(junction, model)
+#   end
 
 # end
 

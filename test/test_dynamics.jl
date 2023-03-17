@@ -164,14 +164,25 @@ end
 # @test _check_k_off_slip(tol)
 
 
-# function _check_k_on_constant(tol)
+function _check_k_on_constant(tol)
 
-#     junction = Interface(false, 4, [1,0,0,1], [0.1, 0.1, 0.1, 0.1], [0.5, 0.5, 0.5, 0.5], [1, 1, 1, 1], BitMatrix(undef,4,0))
-#     model = Model(Dict("model"=>k_on_constant, "k_on_0"=>0.2), Dict("model"=>k_off_slip, "k_off_0"=>0.1, "f_1e"=>1), Dict())
-#     junction = k_on_constant(junction, model)
+    n = 5
+    l = 1
 
-#     isapprox(junction.k_on, [0,0.2,0.2,0], atol=tol) && (typeof(junction.k_on) == Vector{CellAdhesionFloat})
+    v1 = Interface(Bond.([false,true,true, false, true], zeros(n), zeros(n), zeros(n), repeat([false], n)), false, 0.0, false, n, l)
+    model = Model(Dict("model"=>force_global),Dict("model"=>k_on_constant, "k_on_0"=>0.2), Dict("model"=>k_off_slip, "k_off_0"=>0.0, "f_1e"=>1), Dict())
+    k_rate_junction(v1, model)
 
-# end
-# @test _check_k_on_constant(tol)
+    v2 = Interface(Bond.([false,true,true, false, true], zeros(n), zeros(n), zeros(n), repeat([false], n)), false, 0.0, false, n, l)
+    v3 = Interface(Bond.([false,true,true, true, true], zeros(n), zeros(n), zeros(n), repeat([false], n)), false, 0.0, false, n, l)
+    int_1 = Interface([v2, v3], false, 60.0, false, 2, l)
+
+    k_rate_junction(int_1, model)
+
+    (isapprox(getfield.(v1.u, :k_on), [0.2, 0.0, 0.0, 0.2, 0.0], atol=tol) && (typeof(getfield.(v1.u,:k_on)) == Vector{CellAdhesionFloat})
+      && isapprox(getfield.(int_1.u[1].u, :k_on), [0.2, 0.0, 0.0, 0.2, 0.0], atol=tol) && isapprox(getfield.(int_1.u[2].u, :k_on), [0.2, 0.0, 0.0, 0.0, 0.0], atol=tol))
+
+end
+
+@test _check_k_on_constant(tol)
 
