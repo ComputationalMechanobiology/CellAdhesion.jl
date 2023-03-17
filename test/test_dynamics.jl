@@ -53,7 +53,7 @@ end
 
 function _check_force_clusters_global(tol)
 
-    model = Model(Dict("model"=>force_global),Dict("model"=>k_on_constant, "k_on_0"=>1.0), Dict("model"=>k_off_slip, "k_off_0"=>0.0, "f_1e"=>1), Dict())
+    model = Model(Dict("model"=>force_global),Dict("model"=>k_on_constant, "k_on_0"=>1.0), Dict("model"=>k_off_slip, "k_off_0"=>0.0, "f_1e"=>1), Dict("dt"=>convert(CellAdhesionFloat,1e-2)))
 
 
     int_1 =  interface([2, 3], [1.0, 0.1], 18.0, [true, true], model)
@@ -123,7 +123,7 @@ end
 
 function _check_force_clusters_local(tol)
 
-    model = Model(Dict("model"=>force_global),Dict("model"=>k_on_constant, "k_on_0"=>1.0), Dict("model"=>k_off_slip, "k_off_0"=>0.0, "f_1e"=>1), Dict())
+    model = Model(Dict("model"=>force_global),Dict("model"=>k_on_constant, "k_on_0"=>1.0), Dict("model"=>k_off_slip, "k_off_0"=>0.0, "f_1e"=>1), Dict("dt"=>convert(CellAdhesionFloat,1e-2)))
     int_1 =  interface([2, 3], [1.0, 0.1], 18.0, [true, true], model)
     update_state(int_1)
     force(int_1, model)
@@ -166,7 +166,7 @@ function _check_k_on_constant(tol)
     l = 1
 
     v1 = Interface(Bond.([false,true,true, false, true], zeros(n), zeros(n), zeros(n), repeat([false], n)), false, 0.0, false, n, l)
-    model = Model(Dict("model"=>force_global),Dict("model"=>k_on_constant, "k_on_0"=>0.2), Dict("model"=>k_off_slip, "k_off_0"=>0.0, "f_1e"=>1), Dict())
+    model = Model(Dict("model"=>force_global),Dict("model"=>k_on_constant, "k_on_0"=>0.2), Dict("model"=>k_off_slip, "k_off_0"=>0.0, "f_1e"=>1), Dict("dt"=>convert(CellAdhesionFloat,1e-2)))
     k_on_constant(v1, model)
 
 
@@ -184,7 +184,7 @@ function _check_k_off_slip(tol)
     l = 1
 
     v1 = Interface(Bond.([false,true,true, false, true], zeros(n), zeros(n), zeros(n), repeat([false], n)), false, 0.1, false, n, l)
-    model = Model(Dict("model"=>force_global),Dict("model"=>k_on_constant, "k_on_0"=>0.2), Dict("model"=>k_off_slip, "k_off_0"=>0.5, "f_1e"=>1), Dict())
+    model = Model(Dict("model"=>force_global),Dict("model"=>k_on_constant, "k_on_0"=>0.2), Dict("model"=>k_off_slip, "k_off_0"=>0.5, "f_1e"=>1), Dict("dt"=>convert(CellAdhesionFloat,1e-2)))
     k_off_slip(v1, model)
 
 
@@ -202,7 +202,7 @@ function _check_k_rate_junction(tol)
     l = 1
 
     v1 = Interface(Bond.([false,true,true, false, true], zeros(n), zeros(n), zeros(n), repeat([false], n)), false, 0.1, false, n, l)
-    model = Model(Dict("model"=>force_global),Dict("model"=>k_on_constant, "k_on_0"=>0.2), Dict("model"=>k_off_slip, "k_off_0"=>0.5, "f_1e"=>1), Dict())
+    model = Model(Dict("model"=>force_global),Dict("model"=>k_on_constant, "k_on_0"=>0.2), Dict("model"=>k_off_slip, "k_off_0"=>0.5, "f_1e"=>1), Dict("dt"=>convert(CellAdhesionFloat,1e-2)))
     update_state(v1)
     force(v1, model)
     k_rate_junction(v1, model)

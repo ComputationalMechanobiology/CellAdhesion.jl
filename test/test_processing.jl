@@ -5,9 +5,9 @@ println("===============================================")
 
 function _interface_bonds()
 
-    model1 = Model(Dict("model"=>force_global), Dict("model"=>k_on_constant, "k_on_0"=>0.0), Dict("model"=>k_off_slip, "k_off_0"=>1.0, "f_1e"=>1), Dict())
-    model2 = Model(Dict("model"=>force_global), Dict("model"=>k_on_constant, "k_on_0"=>1.0), Dict("model"=>k_off_slip, "k_off_0"=>0.0, "f_1e"=>1), Dict())
-    model3 = Model(Dict("model"=>force_global), Dict("model"=>k_on_constant, "k_on_0"=>0.8), Dict("model"=>k_off_slip, "k_off_0"=>0.2, "f_1e"=>1), Dict())
+    model1 = Model(Dict("model"=>force_global), Dict("model"=>k_on_constant, "k_on_0"=>0.0), Dict("model"=>k_off_slip, "k_off_0"=>1.0, "f_1e"=>1), Dict("dt"=>convert(CellAdhesionFloat,1e-2)))
+    model2 = Model(Dict("model"=>force_global), Dict("model"=>k_on_constant, "k_on_0"=>1.0), Dict("model"=>k_off_slip, "k_off_0"=>0.0, "f_1e"=>1), Dict("dt"=>convert(CellAdhesionFloat,1e-2)))
+    model3 = Model(Dict("model"=>force_global), Dict("model"=>k_on_constant, "k_on_0"=>0.8), Dict("model"=>k_off_slip, "k_off_0"=>0.2, "f_1e"=>1), Dict("dt"=>convert(CellAdhesionFloat,1e-2)))
     n = 3
 
     v1 = interface(n, 1.0, 15.0, true, model1)
@@ -29,7 +29,7 @@ end
 
 function _interface_cluster()
 
-    model = Model(Dict("model"=>force_global), Dict("model"=>k_on_constant, "k_on_0"=>0.2), Dict("model"=>k_off_slip, "k_off_0"=>0.8, "f_1e"=>1), Dict())
+    model = Model(Dict("model"=>force_global), Dict("model"=>k_on_constant, "k_on_0"=>0.2), Dict("model"=>k_off_slip, "k_off_0"=>0.8, "f_1e"=>1), Dict("dt"=>convert(CellAdhesionFloat,1e-2)))
     v4 = interface([2, 3], [1.0, 0.1], 15.0, [true, true], model)
 
     ((length(v4.u)==2) 

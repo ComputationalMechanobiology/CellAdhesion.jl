@@ -1,5 +1,5 @@
 
-export update_state
+export update_state, KineticMonteCarlo_unit, KineticMonteCarlo
 
 
 
@@ -86,7 +86,7 @@ function update_state(v::Interface)
 end
 
 """
-Base.setproperty! 
+Base.setproperty!    NOT TESTED YET!
 
 Definition to update Interface struct fields
 """
@@ -103,26 +103,43 @@ end
 
 
 
+function KineticMonteCarlo(v::Interface, model::Model)
+
+  #@assert (model.param["dt"]>0) "dt not valid"
+  
+  if typeof(v.u)==Vector{Bond}
+    KineticMonteCarlo_unit(v, model.param["dt"])
+  else
+
+    for i=1:1:v.n
+      KineticMonteCarlo_unit(v.u[i], model.param["dt"])
+    end
+
+  end
+    
+end
+
+
 
 
 """
-KineticMonteCarlo(v::BitVector, n::Integer, k_on::Vector{CellAdhesionFloat}, k_off::Vector{CellAdhesionFloat}, model::Model)-NOT TESTED YET!!!!!
+KineticMonteCarlo(v::Interface, dt::CellAdhesionFloat)
 
 """
 
-function KineticMonteCarlo(v::BitVector, n::Integer, k_on::Vector{CellAdhesionFloat}, k_off::Vector{CellAdhesionFloat}, model::Model)
+function KineticMonteCarlo_unit(v::Interface, dt::CellAdhesionFloat)
 
-  random = rand(n);
-  v_temp = copy(v);
+  random = rand(v.n);
+  v_temp = repeat([false],v.n);
 
-  bond_events = findall(x->x==1, ((k_on.*model.param["dt"]) .>random));
-  v_temp[bond_events] .= 1;
-  unbond_events = findall(x->x==1, ((k_off.*model.param["dt"]) .>random));
-  v_temp[unbond_events] .= 0;
+  bond_events = findall(x->x==1, (getfield.(v.u, :k_on) .* dt .>random));
+  v_temp[bond_events] .= true;
+  unbond_events = findall(x->x==1, (getfield.(v.u, :k_off).*dt .>random));
+  v_temp[unbond_events] .= false;
 
-
-  return v_temp
-
+  for i = 1:1:v.n                               # if I use setproperty! it doesn't work! Ask for help!
+    setfield!(v.u[i], :state, v_temp[i])
+  end
 
 end
 

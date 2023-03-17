@@ -1,4 +1,4 @@
-export interface  #, one_step, junction_simulation
+export interface, one_step#, junction_simulation
 
 
 function interface(n::Union{Int, Vector{Int}}, l::Union{Float64, Vector{Float64}}, F::Float64, history::Union{Bool, Vector{Bool}}, model::Model)
@@ -37,7 +37,7 @@ function interface(n::Union{Int, Vector{Int}}, l::Union{Float64, Vector{Float64}
   
     update_state(x)
     force(x, model)
-    #k_rate_junction(junction, model)
+    k_rate_junction(x, model)
   
     return x
   
@@ -46,20 +46,20 @@ function interface(n::Union{Int, Vector{Int}}, l::Union{Float64, Vector{Float64}
 
 
 
-# function one_step(v::Interface, model::Model)
+function one_step(v::Interface, model::Model)
 
-#   update_state(v)
+  update_state(v)
 
-#   if v.state == true
-#       print("Broken junction")
-#   else
-#       KineticMonteCarlo(v,model)
-#       update_state(v)
-#       force(v, model)
-#       k_rate_junction(junction, model)
-#   end
+  if v.state == true
+      print("Broken junction")
+  else
+      KineticMonteCarlo(v,model)
+      update_state(v)
+      force(v, model)
+      k_rate_junction(junction, model.param["dt"])
+  end
 
-# end
+end
 
 
 
