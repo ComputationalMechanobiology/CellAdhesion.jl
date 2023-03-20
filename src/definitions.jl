@@ -8,6 +8,7 @@ mutable struct Bond
     k_off::CellAdhesionFloat
     f::CellAdhesionFloat              # Force applied to the bond
     history::Union{Array{CellAdhesionFloat}, Bool}
+    #pointer to model
 end
 
 
