@@ -1,33 +1,49 @@
 
-export update_state, KineticMonteCarlo_unit, KineticMonteCarlo
+export model_init, update_state, KineticMonteCarlo_unit, KineticMonteCarlo
 
 
+
+function model_init(force_dict::Dict, k_on_dict::Dict, k_off_dict::Dict, param_dict::Dict)
+
+  return Ref(Model(force_dict, k_on_dict, k_off_dict, param_dict))
+
+end
 
 
 """
-init_bonds(n::Integer, K::CellAdhesionFloat)
+init_bonds(n::Integer, l::CellAdhesionFloat, F::CellAdhesionFloat, model::Base.RefValue{Model})
 
   Generate the initial state of each bond within the cell junction.
 
   Input parameters:
     - n: number of bonds in the junction
-    - K: probability to start in a closed state
+    - 
   Output parameters:
-    - v: state vecotr of individual bonds (0 = open, 1 = closed)
+    - Interface struct
 """
 
-function init_bonds(n::Integer,K::CellAdhesionFloat, history::Bool)
+function init_bonds(n::CellAdhesionInt, l::CellAdhesionFloat, F::CellAdhesionFloat, model::Base.RefValue{Model})
 
-    @assert n>0 "Number of bonds cannot be negative or equal to 0"
-    @assert (K>=0) && (K<=1) "Initialisation probability must be 0<=K<=1"
+  K = model[].k_on["k_on_0"] / (model[].k_on["k_on_0"] + model[].k_off["k_off_0"])
+  v = isless.(rand(n),K)
 
-    v = isless.(rand(n),K)
-
-    return Bond.(v, zeros(n), zeros(n), zeros(n), repeat([history], n))
-
-    return v
+  return Interface(Bond.(v, zeros(n), zeros(n), zeros(n), repeat([model],n)), false, F, n, l)
 
 end
+
+
+function init_bonds(n::Vector{CellAdhesionInt}, l::Vector{CellAdhesionFloat}, F::CellAdhesionFloat, model::Base.RefValue{Model})
+
+  v = Interface(Vector{Interface}(undef,n[1]), false, F, n[1], l[1])
+
+  for i = 1:1:n[1]
+    v.u[i] = init_bonds(n[2], l[2], F, model)
+  end
+
+  return v
+
+end
+
 
 
 """
