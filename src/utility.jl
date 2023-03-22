@@ -3,9 +3,9 @@ export model_init, update_state, KineticMonteCarlo_unit, KineticMonteCarlo
 
 
 
-function model_init(force_dict::Dict, k_on_dict::Dict, k_off_dict::Dict, param_dict::Dict)
+function model_init(k_on::NamedTuple, k_off::NamedTuple)
 
-  return Ref(Model(force_dict, k_on_dict, k_off_dict, param_dict))
+  return Ref(Model(k_on, k_off))
 
 end
 
@@ -22,22 +22,22 @@ init_bonds(n::Integer, l::CellAdhesionFloat, F::CellAdhesionFloat, model::Base.R
     - Interface struct
 """
 
-function init_bonds(n::CellAdhesionInt, l::CellAdhesionFloat, F::CellAdhesionFloat, model::Base.RefValue{Model})
+function init_bonds(n::CellAdhesionInt, l::CellAdhesionFloat, model::Base.RefValue{Model}, F::CellAdhesionFloat, f_model::Symbol)
 
-  K = model[].k_on["k_on_0"] / (model[].k_on["k_on_0"] + model[].k_off["k_off_0"])
+  K = model[].k_on[:k_on_0] / (model[].k_on[:k_on_0] + model[].k_off[:k_off_0])
   v = isless.(rand(n),K)
 
-  return Interface(Bond.(v, zeros(n), zeros(n), zeros(n), repeat([model],n)), false, F, n, l)
+  return Cluster(Bond.(v, zeros(n), zeros(n), zeros(n), repeat([model], n)), false, F, f_model, n, l)
 
 end
 
 
-function init_bonds(n::Vector{CellAdhesionInt}, l::Vector{CellAdhesionFloat}, F::CellAdhesionFloat, model::Base.RefValue{Model})
+function init_bonds(n::Vector{CellAdhesionInt}, l::Vector{CellAdhesionFloat}, model::Base.RefValue{Model}, F::CellAdhesionFloat, f_model::Vector{Symbol})
 
-  v = Interface(Vector{Interface}(undef,n[1]), false, F, n[1], l[1])
+  v = Interface(Vector{Cluster}(undef,n[1]), false, F, f_model[1], n[1], l[1])
 
   for i = 1:1:n[1]
-    v.u[i] = init_bonds(n[2], l[2], F, model)
+    v.u[i] = init_bonds(n[2], l[2], model, F, f_model[2])
   end
 
   return v
@@ -47,13 +47,15 @@ end
 
 
 """
-update_unit_state(v::Interface)
+update_unit_state(v::Union{Cluster,Interface})
 
-  update unit junction state - function not exported, called by update_state()
+  update a cluster or interface state
 
 """
 
-function update_unit_state(v::Interface)
+function update_unit_state(v::Union{Cluster,Interface})
+
+  @assert !isempty(v.u) "Unit vector in Cluster is empty"
 
   # Get the state value for each bond
   interface_v = getfield.(v.u, :state);
@@ -73,8 +75,9 @@ end
 
 """
 update_state(v::Interface)
+update_state(v::Cluster)
 
-  update if a junction is broken or still viable.
+  update if an interface or cluster is broken or still viable.
 
   Input parameters:
     - v: Interface object 
@@ -83,32 +86,30 @@ update_state(v::Interface)
 """
 
 
+function update_state(v::Cluster)
+
+  update_unit_state(v)
+
+end
 
 function update_state(v::Interface)
 
-  @assert !isempty(v.u) "Unit vector in Interface is empty"
-
-  if typeof(v.u)== Vector{Interface}
-
-    for i = 1:1:v.n
-      update_unit_state(v.u[i])
-    end
-
+  for i = 1:1:v.n
+    update_unit_state(v.u[i])
   end
-    
-  update_unit_state(v)
 
+  update_unit_state(v)
 
 end
 
 """
-Base.setproperty!    NOT TESTED YET!
+Base.setproperty!   
 
 Definition to update Interface struct fields
 """
 
 
-function Base.setproperty!(x::Interface, s::Symbol, new_x::Vector{CellAdhesionFloat})
+function Base.setproperty!(x::Union{Cluster, Interface}, s::Symbol, new_x::Vector{CellAdhesionFloat})
 
   for i = 1:1:x.n
     setfield!(x.u[i], s, new_x[i])
@@ -118,21 +119,12 @@ end
 
 
 
+function KineticMonteCarlo(v::Interface, dt::CellAdhesionFloat)
 
-function KineticMonteCarlo(v::Interface, model::Model)
-
-  #@assert (model.param["dt"]>0) "dt not valid"
-  
-  if typeof(v.u)==Vector{Bond}
-    KineticMonteCarlo_unit(v, model.param["dt"])
-  else
-
-    for i=1:1:v.n
-      KineticMonteCarlo_unit(v.u[i], model.param["dt"])
-    end
-
+  for i=1:1:v.n
+    KineticMonteCarlo(v.u[i], dt)
   end
-    
+
 end
 
 
@@ -143,7 +135,7 @@ KineticMonteCarlo(v::Interface, dt::CellAdhesionFloat)
 
 """
 
-function KineticMonteCarlo_unit(v::Interface, dt::CellAdhesionFloat)
+function KineticMonteCarlo(v::Cluster, dt::CellAdhesionFloat)
 
   random = rand(v.n);
   v_temp = getfield.(v.u, :state);

@@ -1,12 +1,9 @@
-export Bond, Interface, Model
+export Bond, Cluster, Interface, Model
 
 
 struct Model
-    f::Dict
-    k_on::Dict
-    k_off::Dict
-    param::Dict
-
+    k_on::NamedTuple
+    k_off::NamedTuple
 end
 
 
@@ -20,15 +17,24 @@ end
 
 
 
-mutable struct Interface
-    u::Union{Vector{Bond}, Vector{Interface}}            # Unit element (it can be a bond struct or an interface struct)       
-    state::Bool                                          # False = Open, True = closed
-    f::CellAdhesionFloat                                 # Force applied to the Interface
+mutable struct Cluster
+    u::Vector{Bond}                     # Unit element       
+    state::Bool                         # False = Open, True = closed
+    f::CellAdhesionFloat                # Force applied to the Interface
+    const f_model::Symbol
     const n::CellAdhesionInt
-    const l::CellAdhesionFloat                           # Distance between bonds
+    const l::CellAdhesionFloat          # Distance between bonds
 end
 
 
+mutable struct Interface
+    u::Vector{Cluster}                     # Unit element       
+    state::Bool                         # False = Open, True = closed
+    f::CellAdhesionFloat                # Force applied to the Interface
+    const f_model::Symbol
+    const n::CellAdhesionInt
+    const l::CellAdhesionFloat          # Distance between bonds
+end
 
 
 
