@@ -17,6 +17,67 @@ end
 
 @test _check_slip_model_init()
 
+
+
+function _check_print()
+    model1 = slip_model_init((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+    model2 = slip_model_init((k_on_0=0.2,), (k_off_0=0.8, f_1e=1))
+    n = convert(CellAdhesionInt, 3)
+    l = convert(CellAdhesionFloat, 1.0)
+    F = convert(CellAdhesionFloat, 60.0)
+  
+    force_string = :force_global
+    v1 = Cluster(Bond.([true,true,true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model1], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+    v2 = Cluster(Bond.([true,true,true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model2], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+    int_1 = Cluster([v1, v2], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l)
+  
+
+    #print_cluster(int_1)
+
+    1==1
+
+end
+
+@test _check_print()
+
+
+
+
+function _check_check_state()
+
+    model = slip_model_init((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+    n = convert(CellAdhesionInt, 4)
+    l = convert(CellAdhesionFloat, 1.0)
+    F = convert(CellAdhesionFloat, 60.0)
+  
+    force_string = :force_global
+    v1 = Cluster(Bond.([true,false,true, true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+    v2 = Cluster(Bond.([false,false,false, false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+    v3 = Cluster(Bond.([true,true,true, true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+    c1 = Cluster([v1, v2], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l)
+    c2 = Cluster([v1, v3], false, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l)
+    c3 = Cluster([v2, v2], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l)
+    
+    int_1 = Cluster([c1, c2, c3], false, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 3), l)
+
+    CellAdhesion.check_state!(int_1)
+
+    ((int_1.state == true) 
+     && (int_1.u[1].state == true)
+     && (int_1.u[2].state == true)
+     && (int_1.u[3].state == false)
+     && (int_1.u[1].u[1].state == true)
+     && (int_1.u[1].u[2].state == false)
+     && (int_1.u[2].u[1].state == true)
+     && (int_1.u[2].u[2].state == true)
+     && (int_1.u[3].u[1].state == false)
+     && (int_1.u[3].u[2].state == false))
+
+end
+
+@test _check_check_state()
+
+
 # function _update_state_bonds()
 
 #     model1 = model_init((model=k_on_constant, k_on_0=0.0), (model=k_off_slip, k_off_0=1.0, f_1e=1))

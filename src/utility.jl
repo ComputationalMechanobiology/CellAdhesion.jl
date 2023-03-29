@@ -1,7 +1,7 @@
 
 # export model_init, update_state, KineticMonteCarlo_unit, KineticMonteCarlo
 
-export slip_model_init
+export slip_model_init, print_cluster
 
 
 function slip_model_init(k_on::NamedTuple, k_off::NamedTuple)
@@ -13,6 +13,38 @@ function slip_model_init(k_on::NamedTuple, k_off::NamedTuple)
   return SlipBondModel((k_on_0 = k_on_0,), (k_off_0 = k_off_0, f_1e = f_1e))
 
 end
+
+
+
+
+
+function check_state!(v::Bond)
+
+  return getfield(v, :state)
+
+end
+
+function check_state!(v::Cluster)
+
+  interface_v = Vector{Bool}(undef,v.n)
+
+  for i = 1:1:v.n 
+    k = v.u[i]
+    interface_v[i] = check_state!(k)  
+  end
+
+  # If the sum of the state values is 0, the junction is broken 
+  sum_v = sum(interface_v);
+  state = isequal(sum_v,0);
+
+  # Update the state value of the junction
+  setfield!(v, :state, !state)
+  
+
+end
+
+
+
 
 
 
@@ -32,7 +64,48 @@ function Base.setproperty!(x::Cluster, s::Symbol, new_x::Vector{CellAdhesionFloa
 end
 
 
-# """
+"""
+print_cluster()
+
+Nice screen print of Cluster structure
+
+"""
+# function print_cluster(k::Bond)
+#   print("state = ", k.state, ", force = ", k.f, "\n")
+#   print("model = ", k.model, "\n")
+
+# end
+
+
+function print_cluster(x::Bond) 
+
+  print("state = ", x.state, ", force = ", x.f, "\n")
+  print("model = ", x.model, "\n")
+  print("--- \n")
+
+end
+
+function print_cluster(x::Cluster)
+  print("********** \n")
+  print("Cluster type: ", typeof(x), "\n")
+  print("Type of Units = ", typeof(x.u), "\n")
+  print("State = ", x.state, ", force = ", x.f, "\n")
+  print("Force model = ", x.f_model, ", n = ", x.n, ", l = ", x.l, "\n")
+  print("********** \n")
+
+  for i = 1:1:x.n
+
+    k = x.u[i]
+    print_cluster(k)
+
+    
+  end
+
+
+end  
+
+
+
 # init_bonds(n::Integer, l::CellAdhesionFloat, F::CellAdhesionFloat, model::Base.RefValue{Model})
 
 #   Generate the initial state of each bond within the cell junction.
@@ -44,14 +117,7 @@ end
 #     - Interface struct
 # """
 
-# function init_bonds(n::CellAdhesionInt, l::CellAdhesionFloat, model::T, F::CellAdhesionFloat, f_model::Symbol)
 
-#   K = model[].k_on[:k_on_0] / (model[].k_on[:k_on_0] + model[].k_off[:k_off_0])
-#   v = isless.(rand(n),K)
-
-#   return Cluster(Bond.(v, zeros(n), zeros(n), zeros(n), repeat([model], n)), false, F, f_model, n, l)
-
-# end
 
 
 # function init_bonds(n::Vector{CellAdhesionInt}, l::Vector{CellAdhesionFloat}, model::Base.RefValue{Model}, F::CellAdhesionFloat, f_model::Vector{Symbol})

@@ -1,6 +1,7 @@
 using Test 
-using Statistics
+#using Statistics
 using CellAdhesion
+#using PrettyPrinting
 
 
 const tol = (eps(CellAdhesion.CellAdhesionFloat))^(0.125)
@@ -8,9 +9,8 @@ const tol = (eps(CellAdhesion.CellAdhesionFloat))^(0.125)
 println("===============================================")
 println("Testing CellAdhesion")
 println("===============================================")
-println("|")
-println("|")
-println("|")
+println("\n")
+
 
 include("test_utility.jl")
 include("test_dynamics.jl")

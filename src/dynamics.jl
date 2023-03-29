@@ -1,4 +1,4 @@
-export k_on, k_off, setforce!
+export setforce!
 
 
 
@@ -58,11 +58,15 @@ end
 
 function setforce!(v::Cluster)
 
-  distributeforce!(v)
+  if v.state == true
 
-  for i = 1:1:v.n 
-    k = v.u[i]
-    setforce!(k)  
+    distributeforce!(v)
+
+    for i = 1:1:v.n 
+      k = v.u[i]
+      setforce!(k)  
+    end
+
   end
 
 end
@@ -77,7 +81,8 @@ function distributeforce!(v::Cluster)
     setfield!(v.u[i], :f, update_f[i])
   end
 
-  end
+  return update_f
+end
 
 
 """
@@ -88,6 +93,7 @@ Computer force distribution by equally dividing the force within the closed bond
 function force_global(v::Cluster)
 
   interface_v = getfield.(v.u, :state);
+  
   return interface_v .* v.f./sum(interface_v)
   
 end

@@ -8,7 +8,7 @@ struct SlipBondModel <: BondModel
 end
 
 mutable struct Bond{T}
-    state::Union{BitArray, Bool}      # False 0  = open, True 1 = closed
+    state::Bool   # False 0  = open, True 1 = closed
     f::CellAdhesionFloat              # Force applied to the bond
     model::T                          # BondModel data type (we do not use pointers -> will see later if necessary) 
 end
