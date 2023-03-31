@@ -1,7 +1,7 @@
 using Test 
-#using Statistics
+using Statistics
 using CellAdhesion
-#using PrettyPrinting
+
 
 
 const tol = (eps(CellAdhesion.CellAdhesionFloat))^(0.125)

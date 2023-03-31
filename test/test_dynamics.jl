@@ -51,7 +51,7 @@ function _check_force_bonds_global(tol)
 
     force_string = :force_global
   
-    model = slip_model_init((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+    model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
   
     n = convert(CellAdhesionInt, 10)
     l = convert(CellAdhesionFloat, 1.0)
@@ -80,7 +80,7 @@ end
 
 function _check_force_clusters_global(tol)
 
-  model = slip_model_init((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+  model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
   n = convert(CellAdhesionInt, 3)
   l = convert(CellAdhesionFloat, 1.0)
   F = convert(CellAdhesionFloat, 60.0)
@@ -124,7 +124,7 @@ end
 
 function _check_force_clusters2levels_global(tol)
 
-  model = slip_model_init((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+  model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
   n = convert(CellAdhesionInt, 4)
   l = convert(CellAdhesionFloat, 1.0)
   F = convert(CellAdhesionFloat, 60.0)
@@ -166,7 +166,7 @@ function _check_force_bonds_local(tol)
 
   force_string = :force_local
   
-  model = slip_model_init((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+  model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
 
   n = convert(CellAdhesionInt, 10)
   l = convert(CellAdhesionFloat, 1.0)
@@ -194,7 +194,7 @@ end
 
 function _check_force_clusters_local(tol)
 
-  model = slip_model_init((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+  model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
   n = convert(CellAdhesionInt, 3)
   l = convert(CellAdhesionFloat, 1.0)
   F = convert(CellAdhesionFloat, 18.0)
@@ -240,7 +240,7 @@ end
 
 function _check_force_clusters2levels_local(tol)
 
-  model = slip_model_init((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+  model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
   n = convert(CellAdhesionInt, 4)
   l = convert(CellAdhesionFloat, 1.0)
   F = convert(CellAdhesionFloat, 60.0)
@@ -279,7 +279,7 @@ end
 
 function _check_force_clusters2levels_local_test2(tol)
 
-  model = slip_model_init((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+  model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
   n = convert(CellAdhesionInt, 4)
   l = convert(CellAdhesionFloat, 1.0)
   F = convert(CellAdhesionFloat, 60.0)

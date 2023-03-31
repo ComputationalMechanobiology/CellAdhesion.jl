@@ -1,4 +1,4 @@
-export update!, cluster_simulation
+export update!, runcluster, Cluster, Bond
 
 
 function update!(v::Bond, dt::CellAdhesionFloat)
@@ -36,7 +36,7 @@ end
 
 
 
-function cluster_simulation(v::Cluster, force::Float64, dt::Float64; max_steps::Integer = 1000, verbose::Bool = false)
+function runcluster(v::Cluster, force::Float64, dt::Float64; max_steps::Integer = 1000, verbose::Bool = false)
 
   step = 0
 
@@ -63,13 +63,12 @@ function cluster_simulation(v::Cluster, force::Float64, dt::Float64; max_steps::
 end
 
 
-function cluster_simulation(v::Cluster, force::Vector{Float64}, dt::Float64; max_steps::Integer = 1000, verbose::Bool = false)
+function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64; max_steps::Integer = 1000, verbose::Bool = false)
 
   # Arbitrary force history applied to the junction
   @assert max_step<=length(force) "Maximum number of steps exceed force vector length"
 
   step = 1
-  F = 0
 
   force = convert(Vector{CellAdhesionFloat},force)
   dt = convert(CellAdhesionFloat, dt)
@@ -97,30 +96,36 @@ end
 
 
 
-# function Cluster(n::Int64, l::Float64, model::T, f_model::Symbol) where T<:BondModel
-
-#   @assert n>0 "Number of bonds cannot be negative or equal to 0"
-#   n = convert(CellAdhesionInt, n)
-#   l = convert(CellAdhesionFloat, l)
+function Cluster(n::Vector{N}, l::Vector{M}, model::T, f_model::Vector{Symbol}) where {T<:BondModel, N<:Real, M<:Real}
   
-#   x = init_bonds(n, l, model, F, f_model)
+  n = convert(Vector{CellAdhesionInt}, n)
+  l = convert(Vector{CellAdhesionFloat}, l)
 
-#   return x
-    
-# end
+  Cluster(n, l, model, f_model)
 
+end
+
+function Cluster(n::N, l::M, model::T, f_model::Symbol) where {T<:BondModel, N<:Real, M<:Real}
+  
+  n = convert(CellAdhesionInt, n)
+  l = convert(CellAdhesionFloat, l)
+
+  Cluster(n, l, model, f_model)
+
+end
 
 
 
 function Cluster(n::CellAdhesionInt, l::CellAdhesionFloat, model::T, f_model::Symbol) where T<:BondModel
 
-  u = Vector{Bond}(undef, n)
+  u = Vector{Bond{T}}(undef, n)
 
   for i = 1:1:n
     u[i] = Bond(model)
   end
   x = Cluster(u, false, convert(CellAdhesionFloat, 0.0), f_model, n, l)
-  check_state!(x)
+  
+  state!(x)
 
   return x
 
@@ -135,131 +140,21 @@ function Bond(model::T) where T <: BondModel
 
 end
 
+function Cluster(n::Vector{CellAdhesionInt}, l::Vector{CellAdhesionFloat}, model::T, f_model::Vector{Symbol}) where T<:BondModel
 
+  u = Vector{Cluster}(undef, n[1])
 
+  for i = 1:1:n[1]
+    if length(n) == 2
+      u[i] = Cluster(n[2],l[2], model, f_model[2])
+    else
+      u[i] = Cluster(n[2:end], l[2:end], model, f_model[2:end])
+    end
+  end
+  x = Cluster(u, false, convert(CellAdhesionFloat, 0.0), f_model[1], n[1], l[1])
 
+  state!(x)
 
-# export interface, one_step, force_increment, junction_simulation
+  return x
 
-
-# function interface(n::Union{Int, Vector{Int}}, l::Union{Float64, Vector{Float64}}, model::T, F::Union{Int64,Float64}, f_model::Union{Symbol, Vector{Symbol}})
-
-#     check_length = length(n)
-#     @assert length(l) == check_length "Length missmatch initialisation"
-
-  
-#     # Make variable types consistent with CellAdhesionFloat
-#     if check_length == 1
-      
-#       @assert n>0 "Number of bonds cannot be negative or equal to 0"
-
-#       n = convert(CellAdhesionInt, n)
-#       l = convert(CellAdhesionFloat, l)
-#     else
-#       n = convert(Vector{CellAdhesionInt}, n)
-#       l = convert(Vector{CellAdhesionFloat}, l)
-#     end
-
-#     F = convert(CellAdhesionFloat, F)
-
-#     x = init_bonds(n, l, model, F, f_model)
-  
-#     update_state(x)
-  
-#     return x
-  
-#   end
-  
-
-
-
-# function one_step(v::Union{Cluster,Interface}, dt::CellAdhesionFloat)
-
-#   update_state(v)
-
-#   if v.state == false
-#       print("Broken junction")
-#   else
-#       KineticMonteCarlo(v,dt)
-#       update_state(v)
-#       force(v)
-#       k_rate_junction(v)
-#   end
-
-# end
-
-# function force_increment(v::Union{Cluster, Interface}, F::CellAdhesionFloat)
-
-#   setfield!(v, :f, F)
-#   force(v)
-#   k_rate_junction(v)
-
-# end
-
-
-
-
-
-
-
-
-
-
-
-# function junction_simulation(junction::Union{Cluster,Interface}, force::Union{Array{Float64}, Float64}, dt::Float64; max_steps::Integer = 1000, verbose::Bool = false)
-
-#     step = 0
-#     force_break = 0
-#     time_break = 0
-
-#     if typeof(force) == Float64
-#       force = convert(CellAdhesionFloat,force)
-#     else
-#       force = convert(Vector{CellAdhesionFloat},force)
-#     end
-
-#     dt = convert(CellAdhesionFloat, dt)
-
-#     # Constant force
-#     if typeof(force) == CellAdhesionFloat
-#       force_increment(junction, force)
-
-#       #print(junction.u, "\n")
-
-#       while (step <= max_steps) && (junction.state == true)
-#           step = step + 1
-#           one_step(junction, dt)
-#       end
-
-#       force_break = force
-
-#     else 
-
-#       # Arbitrary force history applied to the junction
-#       @assert max_step<=length(force) "Maximum number of steps exceed force vector length"
-
-#       while (step <= max_steps) && (junction.state == true)
-#           step = step + 1
-#           force_increment(junction, force[i])
-#           one_step(junction, dt)
-#       end
-
-#       force_break = force[step]
-
-#     end
-
-#     if verbose == true
-#         if junction.state == false
-#             print("Junction broken")
-#         elseif step > max_steps
-#             print("Maximum number of iterations reached")
-#         end
-#     end
-
-#     time_break = dt*step
-
-
-#     return force_break, time_break, step
-
-
-# end
+end

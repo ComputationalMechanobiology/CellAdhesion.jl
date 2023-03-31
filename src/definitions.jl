@@ -1,12 +1,5 @@
 export Bond, Cluster, Model, SlipBondModel
 
-abstract type BondModel end
-
-struct SlipBondModel <: BondModel
-    k_on::NamedTuple
-    k_off::NamedTuple
-end
-
 mutable struct Bond{T}
     state::Bool   # False 0  = open, True 1 = closed
     f::CellAdhesionFloat              # Force applied to the bond
@@ -24,6 +17,20 @@ mutable struct Cluster{T}
 end
 
 
+abstract type BondModel end
+
+struct SlipBondModel <: BondModel
+    k_on::NamedTuple
+    k_off::NamedTuple
+
+    function SlipBondModel(k_on::NamedTuple, k_off::NamedTuple)
+        k_on_0 = convert(CellAdhesionFloat, k_on[:k_on_0])
+        k_off_0 = convert(CellAdhesionFloat, k_off[:k_off_0])
+        f_1e = convert(CellAdhesionFloat, k_off[:f_1e])
+        new((k_on_0 = k_on_0,), (k_off_0 = k_off_0, f_1e = f_1e))
+    end
+
+end
 
 # Interface = Cluster{Cluster}
 
