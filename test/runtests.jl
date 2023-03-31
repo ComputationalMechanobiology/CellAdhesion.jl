@@ -3,14 +3,14 @@ using Statistics
 using CellAdhesion
 
 
+
 const tol = (eps(CellAdhesion.CellAdhesionFloat))^(0.125)
 
 println("===============================================")
 println("Testing CellAdhesion")
 println("===============================================")
-println("|")
-println("|")
-println("|")
+println("\n")
+
 
 include("test_utility.jl")
 include("test_dynamics.jl")

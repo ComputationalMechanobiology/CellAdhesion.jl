@@ -3,127 +3,242 @@ println("===============================================")
 println("Testing processing.jl")
 println("===============================================")
 
-function _interface_bonds()
 
-    model1 = Model(Dict("model"=>force_global), Dict("model"=>k_on_constant, "k_on_0"=>0.0), Dict("model"=>k_off_slip, "k_off_0"=>1.0, "f_1e"=>1), Dict("dt"=>convert(CellAdhesionFloat,1e-2)))
-    model2 = Model(Dict("model"=>force_global), Dict("model"=>k_on_constant, "k_on_0"=>1.0), Dict("model"=>k_off_slip, "k_off_0"=>0.0, "f_1e"=>1), Dict("dt"=>convert(CellAdhesionFloat,1e-2)))
-    model3 = Model(Dict("model"=>force_global), Dict("model"=>k_on_constant, "k_on_0"=>0.8), Dict("model"=>k_off_slip, "k_off_0"=>0.2, "f_1e"=>1), Dict("dt"=>convert(CellAdhesionFloat,1e-2)))
-    n = 3
+function _check_KineticMonteCarlo_ClusterBonds(tol)
 
-    v1 = interface(n, 1.0, 15.0, false, model1)
-    v2 = interface(n, 1.0, 10.0, false, model2)
-    v3 = interface(n, 1.0, 15.0, false, model3)
-
-    ((getproperty.(v1.u[:], :state) == zeros(n)) 
-      && (getproperty.(v2.u[:], :state) == ones(n)) 
-      && (typeof(getproperty.(v3.u[:], :state)) == BitVector) 
-      && (v1.f == 15.0) 
-      && (v1.state == false) 
-      && (v2.state==true) 
-      && (v3.state == true))
-
-end
-@test _interface_bonds()
+  model1 = SlipBondModel((k_on_0=0.2,), (k_off_0=1.0, f_1e=1))
+  model2 = SlipBondModel((k_on_0=0.8,), (k_off_0=0.0, f_1e=1))
 
 
+  n = convert(CellAdhesionInt, 4)
+  l = convert(CellAdhesionFloat, 1.0)
+  F = convert(CellAdhesionFloat, 10.0)
 
-function _interface_cluster()
-
-    model = Model(Dict("model"=>force_global), Dict("model"=>k_on_constant, "k_on_0"=>0.2), Dict("model"=>k_off_slip, "k_off_0"=>0.8, "f_1e"=>1), Dict("dt"=>convert(CellAdhesionFloat,1e-2)))
-    v4 = interface([2, 3], [1.0, 0.1], 15.0, [false, false], model)
-
-    ((length(v4.u)==2) 
-      && (length(v4.u[1].u)==3) 
-      && (v4.f == 15.0))
-
-end
-@test _interface_cluster()
+  force_string = :force_global
+  v1 = Cluster(Bond.([true,true,true, true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model1], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  v2 = Cluster(Bond.([false,false,false, false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model2], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  v3 = Cluster(Bond.([false,false,false, true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model2], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
 
 
+  setforce!(v1, F)
+  update!(v1, convert(CellAdhesionFloat,10))
+  setforce!(v1, F)
 
-function _check_one_step(tol)
+  setforce!(v2, F)
+  update!(v2, convert(CellAdhesionFloat,10))
+  setforce!(v2, F)
 
-  model1 = Model(Dict("model"=>force_global), 
-                Dict("model"=>k_on_constant, "k_on_0"=>1.0), 
-                Dict("model"=>k_off_slip, "k_off_0"=>0.2, "f_1e"=>1), 
-                Dict("dt"=>convert(CellAdhesionFloat,1.0)))
-
-  junction = interface(10, 1.0, 1.0, false, model1)
+  setforce!(v3, F)
+  update!(v3, convert(CellAdhesionFloat,10))
+  setforce!(v3, F)
  
-  one_step(junction, model1)
 
-  (junction.state == true)  
+  (
+    isapprox(getfield.(v1.u, :state), [false,false,false,false], atol=tol)
+    && isapprox(getfield.(v2.u, :state), [false,false,false,false], atol=tol)
+    && isapprox(getfield.(v3.u, :state), [true,true,true,true], atol=tol)
+  )
+
 
 end
 
-@test _check_one_step(tol)
+@test _check_KineticMonteCarlo_ClusterBonds(tol)
 
 
+function _check_KineticMonteCarlo_ClusterCluster(tol)
+
+  model1 = SlipBondModel((k_on_0=0.2,), (k_off_0=1.0, f_1e=1))
+  model2 = SlipBondModel((k_on_0=10.0,), (k_off_0=0.0, f_1e=1))
 
 
-function _check_force_increment(tol)
+  n = convert(CellAdhesionInt, 4)
+  l = convert(CellAdhesionFloat, 1.0)
+  F = convert(CellAdhesionFloat, 10.0)
 
-  model1 = Model(Dict("model"=>force_global), 
-                Dict("model"=>k_on_constant, "k_on_0"=>1.0), 
-                Dict("model"=>k_off_slip, "k_off_0"=>0.2, "f_1e"=>1), 
-                Dict("dt"=>convert(CellAdhesionFloat,1.0)))
+  force_string = :force_global
+  v1 = Cluster(Bond.([true,true,true, true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model1], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  v2 = Cluster(Bond.([true,true,true, true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model1], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  int_1 = Cluster([v1, v2], true, convert(CellAdhesionFloat, 0.0), :force_global, convert(CellAdhesionInt, 2), l)
+  setforce!(int_1, F)
+  update!(int_1, convert(CellAdhesionFloat, 1))
+  setforce!(int_1, F)
 
-  junction = interface(10, 1.0, 1.0, false, model1)
 
-  force_increment(junction, model1, convert(CellAdhesionFloat,10.0))
+  v3 = Cluster(Bond.([false,false,false, true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model2], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  v4 = Cluster(Bond.([false,false,false, true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model2], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  int_2 = Cluster([v3, v4], true, convert(CellAdhesionFloat, 0.0), :force_global, convert(CellAdhesionInt, 2), l)
+  setforce!(int_2, F)
+  update!(int_2, convert(CellAdhesionFloat, 1))
+  setforce!(int_2, F)
 
-  ((junction.f == 10.0) 
-    && isapprox(sum(getfield.(junction.u, :f)), 10.0,atol=tol))
+
+  v5 = Cluster(Bond.([false,false,false, false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model2], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  v6 = Cluster(Bond.([false,false,false, false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model2], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  int_3 = Cluster([v5, v6], false, convert(CellAdhesionFloat, 0.0), :force_global, convert(CellAdhesionInt, 2), l)
+  setforce!(int_3, F)
+  update!(int_3, convert(CellAdhesionFloat, 1))
+  setforce!(int_3, F)
+
+  (
+    isapprox(getfield.(int_1.u[1].u, :state), [false,false,false,false], atol=tol)
+    && isapprox(getfield.(int_1.u[2].u, :state), [false,false,false,false], atol=tol)
+    && isapprox(getfield.(int_2.u[1].u, :state), [true,true,true, true], atol=tol)
+    && isapprox(getfield.(int_2.u[2].u, :state), [true,true,true, true], atol=tol)
+    && isapprox(getfield.(int_3.u[1].u, :state), [false,false,false, false], atol=tol)
+    && isapprox(getfield.(int_3.u[2].u, :state), [false,false,false, false], atol=tol)
+  )
+
 
 end
 
-@test _check_force_increment(tol)
+@test _check_KineticMonteCarlo_ClusterCluster(tol)
 
 
 
 
-function _check_junction_simulation(tol)
+function _check_KineticMonteCarlo_Cluster2(tol)
 
-  model1 = Model(Dict("model"=>force_global), 
-                Dict("model"=>k_on_constant, "k_on_0"=>3e-3), 
-                Dict("model"=>k_off_slip, "k_off_0"=>3e-4, "f_1e"=>0.055), 
-                Dict("dt"=>convert(CellAdhesionFloat,0.01)))
+  model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+  n = convert(CellAdhesionInt, 4)
+  l = convert(CellAdhesionFloat, 1.0)
+  F = convert(CellAdhesionFloat, 60.0)
+
+  force_string = :force_global
+  v1 = Cluster(Bond.([true,false, true, true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  v2 = Cluster(Bond.([false,false, false, false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  v3 = Cluster(Bond.([true,true, false, false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  v4 = Cluster(Bond.([true,false, true, true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  v5 = Cluster(Bond.([false,false, false, false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  v6 = Cluster(Bond.([false,false, false, false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+
+  c1 = Cluster([v1, v2], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l)
+  c2 = Cluster([v3, v4], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l)
+  c3 = Cluster([v5, v6], false, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l)
+  
+  int_1 = Cluster([c1, c2, c3], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 3), l)
+  setforce!(int_1, F)
+  update!(int_1, convert(CellAdhesionFloat, 1))
+  setforce!(int_1, F)
+
+  (
+    isapprox(getfield.(int_1.u, :state), [true, true, false], atol=tol)
+    && isapprox(getfield.(int_1.u[1].u, :state), [true, false], atol=tol)
+    && isapprox(getfield.(int_1.u[2].u, :state), [true, true], atol=tol)
+    && isapprox(getfield.(int_1.u[3].u, :state), [false, false], atol=tol)
+    && isapprox(getfield.(int_1.u[1].u[1].u, :state), [true, true, true, true], atol=tol)
+    && isapprox(getfield.(int_1.u[1].u[2].u, :state), [false, false, false, false], atol=tol)
+    && isapprox(getfield.(int_1.u[2].u[1].u, :state), [true, true, true, true], atol=tol)
+    && isapprox(getfield.(int_1.u[2].u[2].u, :state), [true, true, true, true], atol=tol)
+    && isapprox(getfield.(int_1.u[3].u[1].u, :state), [false, false, false, false], atol=tol)
+    && isapprox(getfield.(int_1.u[3].u[2].u, :state), [false, false, false, false], atol=tol)
+
+  )
+
+
+end
+
+@test _check_KineticMonteCarlo_Cluster2(tol)
+
+
+
+function _check_bond()
+
+  model1 = SlipBondModel((k_on_0=0.0,), (k_off_0=1.0, f_1e=1))
+  x1 = Bond(model1)
+  model2 = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+  x2 = Bond(model2)
+
+  ((x1.state == false) && (x2.state == true) &&  typeof(x1) == Bond{SlipBondModel})
+
+end
+@test _check_bond()
+
+
+function _check_cluster()
+
+  n = convert(CellAdhesionInt, 5)
+  l = convert(CellAdhesionFloat, 1.0)
+  f_model1 = :force_global
+  f_model2 = :force_local
+
+  model1 = SlipBondModel((k_on_0=0.0,), (k_off_0=1.0, f_1e=1))
+  x1 = Cluster(n, l, model1, f_model1)
+  model2 = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+  x2 = Cluster(n, l, model2, f_model2)
+
+  (isapprox(getfield.(x1.u, :state), [false,false,false,false,false], atol=tol)
+  && isapprox(getfield.(x2.u, :state), [true,true,true,true,true], atol=tol))
+
+end
+
+@test _check_cluster()
+
+
+function _check_cluster()
+
+  #n = convert(Vector{CellAdhesionInt}, [2,5])
+  n = [2,5]
+  l = [1.0, 0.1]
+  f_model = [:force_global, :f_local]
+  model1 = SlipBondModel((k_on_0=0.0,), (k_off_0=1.0, f_1e=1))
+  x1 = Cluster(n, l, model1, f_model)
+
+  n = [3, 2, 5]
+  l = [1.0, 0.1, 0.01]
+  f_model = [:force_global, :f_local, :f_global]
+  model1 = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+  x2 = Cluster(n, l, model1, f_model)
+
+  (
+    (x1.n == 2)
+    && (typeof(x1.u[1].u[1]) == Bond{SlipBondModel})
+    && (typeof(x1) == Cluster{Cluster})
+    && (typeof(x2) == Cluster{Cluster})
+    && (x2.n == 3)
+    && (x2.u[1].n == 2)
+    && (x2.u[1].u[1].u[1].state ==true)
+    && (x2.state == true)
+    
+  )
+
+end
+
+@test _check_cluster()
+
+function _check_runcluster(tol)
+
+  model = SlipBondModel((k_on_0=3e-3,), (k_off_0=3e-4, f_1e=0.055))
 
   N = 20
-  junction = interface(50, 1.0, 0.0, false, model1)
+
   stress_break_v = zeros(N)
   time_break_v = zeros(N)
 
   for sim = 1:1:N
-    junction = interface(50, 1.0, 0.0, false, model1)
-    stress_break_v[sim], time_break_v[sim], step = junction_simulation(junction, model1, 50*0.2, max_steps = 500000)
+    x = Cluster(50, 1.0, model, :force_global)
+    state, stress_break_v[sim], time_break_v[sim], step = runcluster(x, 50*0.2, 0.01, max_steps = 500000)
   end
   stress_break_mean = mean(stress_break_v)
   time_break_mean = mean(time_break_v)
 
 
-  model2 = Model(Dict("model"=>force_local), 
-                  Dict("model"=>k_on_constant, "k_on_0"=>3e-3), 
-                  Dict("model"=>k_off_slip, "k_off_0"=>3e-4, "f_1e"=>0.055), 
-                  Dict("dt"=>convert(CellAdhesionFloat,0.01)))
-  
-  
+  stress_break_v1 = zeros(N)
+  time_break_v1 = zeros(N)
 
-    stress_break_v1 = zeros(N)
-    time_break_v1 = zeros(N)
+  for sim = 1:1:N
+    x = Cluster(50, 1.0, model, :force_local)
+    state, stress_break_v1[sim], time_break_v1[sim], step = runcluster(x, 50*0.2, 0.01, max_steps = 500000)
+  end
+  stress_break_mean1 = mean(stress_break_v1)
+  time_break_mean1 = mean(time_break_v1)
 
-    for sim = 1:1:N
-      junction = interface(10, 1.0, 0.0, false, model2)
-      stress_break_v1[sim], time_break_v1[sim], step = junction_simulation(junction, model2, 50*0.2, max_steps = 500000)
-    end
-    stress_break_mean1 = mean(stress_break_v1)
-    time_break_mean1 = mean(time_break_v1)
+  #print(time_break_mean, "\n")
+  #print(time_break_mean1, "\n")
 
-    print(time_break_mean, "\n")
-    print(time_break_mean1, "\n")
 
-    (time_break_mean>time_break_mean1) #&& (time_break_mean<2.0) && (time_break_mean<10.0)
+  (time_break_mean>time_break_mean1) && (time_break_mean<20.0) && (time_break_mean>10.0)
 
 end
 
-@test _check_junction_simulation(tol)
+@test _check_runcluster(tol)
+

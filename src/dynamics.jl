@@ -1,13 +1,25 @@
+export setforce!
 
-export force, force_global, force_local, k_on_constant, k_off_slip, k_rate_junction
 
+
+function k_on(m::SlipBondModel)
+  
+  return m.k_on[:k_on_0]
+
+end
+
+function k_off(m::SlipBondModel, f::CellAdhesionFloat)
+  
+  return m.k_off[:k_off_0] .* exp.(f ./ m.k_off[:f_1e])
+
+end
 
 
 
 #------------------ FORCE -------------------------------------
 
 """
-force(v::Interface, model::Model)
+setforce!(v::Interface, model::Model)
 
   Compute the force on each link. 
   Two options are available:
@@ -24,47 +36,81 @@ force(v::Interface, model::Model)
 """
 
 
-function force(v::Interface, model::Model)
+function setforce!(v::Cluster{Bond{T}}, F::CellAdhesionFloat) where T <:BondModel
 
-  @assert v.f>=0 "Applied stress to junction must be positive or equal to zero"
+  setfield!(v, :f, F)
+  distributeforce!(v)
 
-  model.f["model"](v, v.f)
+end
 
-  if typeof(v.u)== Vector{Interface}
-    
-    for i = 1:1:v.n
-      model.f["model"](v.u[i], v.u[i].f)
-    end
+function setforce!(v::Cluster{Bond{T}}) where T <:BondModel
   
+  distributeforce!(v)
+
+end
+
+
+function setforce!(v::Cluster, F::CellAdhesionFloat)
+
+  setfield!(v, :f, F)
+  setforce!(v)
+
+end
+
+
+function setforce!(v::Cluster)
+
+  if v.state == true
+
+    distributeforce!(v)
+
+    for i = 1:1:v.n 
+      k = v.u[i]
+      setforce!(k)  
+    end
+
   end
 
 end
+
+
+
+function distributeforce!(v::Cluster)
+
+  #@assert v.f>=0 "Applied stress to Cluster must be positive or equal to zero"
+  update_f = getfield(CellAdhesion, v.f_model)(v)      # If we define v.f_model as string then => Symbol(v.f_model)
+  for i = 1:1:v.n
+    setfield!(v.u[i], :f, update_f[i])
+  end
+
+  return update_f
+end
+
 
 """
 force_global
 Computer force distribution by equally dividing the force within the closed bonds
 """
 
-function force_global(v::Interface, f::CellAdhesionFloat)
+function force_global(v::Cluster)
 
   interface_v = getfield.(v.u, :state);
-  update_f = interface_v .* f./sum(interface_v)
-  setproperty!(v, :f, convert(Vector{CellAdhesionFloat},update_f))
-
+  
+  return interface_v .* v.f./sum(interface_v)
+  
 end
 
-"""
-force_local
-Computer force distribution by accounting for the distance of each link from its two closest neighbours
-"""
+# """
+# force_local
+# Computer force distribution by accounting for the distance of each link from its two closest neighbours
+# """
 
 
-function force_local(v::Interface, f::CellAdhesionFloat)
+function force_local(v::Cluster)
 
   interface_v = getfield.(v.u, :state);
   l = distance(interface_v, v.n)
-  update_f = l ./ sum(l) .*f;
-  setproperty!(v, :f, convert(Vector{CellAdhesionFloat},update_f))
+  return l ./ sum(l) .*v.f;
 
 end
 
@@ -109,78 +155,3 @@ function distance(v::BitVector, n::Integer)
   return convert(Vector{CellAdhesionFloat}, l)
 
 end
-
-
-
-#------------------ K RATE -------------------------------------
-
-function k_rate_junction(v::Interface, model::Model)
-
-  @assert (model.k_on["model"] in list_k_models) "k_on rate model not defined"
-  @assert (model.k_off["model"] in list_k_models) "k_off rate model not defined"
-  
-  if typeof(v.u)==Vector{Bond}
-    model.k_on["model"](v, model)
-    model.k_off["model"](v, model)
-  else
-
-    for i=1:1:v.n
-      model.k_on["model"](v.u[i], model)
-      model.k_off["model"](v.u[i], model)
-    end
-
-  end
-    
-end
-
-
-"""
-k_off_slip(v::Interface, model::Model)
-
-  Compute the probability of unbinding of each closed bonds within the junction. 
-  Force-dependent behaviour of the unbinding probability is described by the Bell model. 
-
-  Input parameters:
-    - v: Interface variable
-    - model: Model varible containing the unbinding parameters (k_off_0 = rate of unbinding with no force applied, 
-                                                                f_1e = threshold force exponential decay)
-  Output parameters:
-    - k_off: Unbinding probability for each bond
-"""
-
-function k_off_slip(v::Interface, model::Model)
-
-  update_k_off = model.k_off["k_off_0"] .* exp.(getfield.(v.u, :f) ./ model.k_off["f_1e"]) .* getfield.(v.u, :state);
-  setproperty!(v, :k_off, convert(Vector{CellAdhesionFloat},update_k_off))
-
-end
-
-
-"""
-k_on_constant(v::Interface, model::Model)
-
-  Compute the probability of binding of each open bond within the junction. 
-  Force-dependent behaviour of the unbinding probability is described by the Bell model. 
-
-  Input parameters:
-    - v: Interface variable
-    - model: Model varible containing the binding parameters (k_on_0 = rate of binding with no force applied)
-  Output parameters:
-    - junction: binding probability for each bond
-"""
-
-function k_on_constant(v::Interface, model::Model)
-
-  update_k_on = model.k_on["k_on_0"] .* (ones(v.n) .- getfield.(v.u, :state));
-  setproperty!(v, :k_on, convert(Vector{CellAdhesionFloat},update_k_on))
-
-end
-
-
-# Add here new k_on or k_off functions models!
-
-list_k_models = [k_off_slip, 
-                 k_on_constant]
-
-
-

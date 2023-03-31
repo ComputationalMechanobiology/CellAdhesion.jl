@@ -1,9 +1,16 @@
+#!/usr/bin/env julia
+__precompile__(true)
+
+
 module CellAdhesion
 
 CellAdhesionFloat = Float32
-export CellAdhesionFloat
+CellAdhesionInt = Int32
+export CellAdhesionFloat, CellAdhesionInt
 
 using Plots
+
+
 
 
 

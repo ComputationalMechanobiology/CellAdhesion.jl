@@ -1,130 +1,160 @@
-export interface, one_step, force_increment, junction_simulation
+export update!, runcluster, Cluster, Bond
 
 
-function interface(n::Union{Int, Vector{Int}}, l::Union{Float64, Vector{Float64}}, F::Float64, history::Union{Bool, Vector{Bool}}, model::Model)
+function update!(v::Bond, dt::CellAdhesionFloat)
 
-    check_length = length(n)
-    @assert length(l) == check_length "Length missmatch initialisation"
-    @assert length(history) == check_length "Length missmatch initialisation"
+  random = rand();
+  v.state ? k = k_off(v.model, v.f) : k = k_on(v.model)
+  (k*dt>random) ? (v.state = !(v.state)) : nothing
 
-
-    K = model.k_on["k_on_0"] / (model.k_on["k_on_0"] + model.k_off["k_off_0"])
   
-    # Make variable types consistent with CellAdhesionFloat
-    if check_length == 1
-      n = convert(Int32, n)
-      l = convert(CellAdhesionFloat, l)
-    else
-      n = convert(Vector{Int32}, n)
-      l = convert(Vector{CellAdhesionFloat}, l)
-    end
-      K = convert(CellAdhesionFloat, K)
-      F = convert(CellAdhesionFloat, F)
-  
-    # If the junction has only one cluster
-    if check_length ==1
-  
-      x = Interface(init_bonds(n, K, history), false, F, false, n, l)
-    
-    else  # If the junction has multiple clusters
-  
-      x = Interface(Vector{Interface}(undef,0), false, F, false, n[1], l[1])
-      for i = 1:1:n[1]
-        push!(x.u, Interface(init_bonds(n[2], K, history[2]), false, 0.0, history[1], n[2], l[2]))
-      end
-  
-    end
-  
-    update_state(x)
-    force(x, model)
-    k_rate_junction(x, model)
-  
-    return x
-  
-  end
-  
-
-
-
-function one_step(v::Interface, model::Model)
-
-  update_state(v)
-
-  if v.state == false
-      print("Broken junction")
-  else
-      KineticMonteCarlo(v,model)
-      update_state(v)
-      force(v, model)
-      k_rate_junction(v, model)
-  end
-
 end
 
-function force_increment(v::Interface, model::Model, F::CellAdhesionFloat)
+function update!(v::Cluster, dt::CellAdhesionFloat)
 
-  setfield!(v, :f, F)
-  force(v, model)
-  k_rate_junction(v, model)
+  if v.state == true
+
+    for i = 1:1:v.n 
+      k = v.u[i]
+      update!(k, dt)  
+    end
+
+    #Get the state value for each bond
+    interface_v = getfield.(v.u, :state);
+
+    # If the sum of the state values is 0, the junction is broken 
+    sum_v = sum(interface_v);
+    state = isequal(sum_v,0);
+
+    # Update the state value of the junction
+    setfield!(v, :state, !state)
+
+  end
 
 
 end
 
 
 
+function runcluster(v::Cluster, force::Float64, dt::Float64; max_steps::Integer = 1000, verbose::Bool = false)
 
-function junction_simulation(junction::Interface, model::Model, force::Union{Array{Float64}, Float64}; max_steps::Integer = 1000, verbose::Bool = false)
+  step = 0
 
-    step = 0
-    force_break = 0
-    time_break = 0
+  force = convert(CellAdhesionFloat,force)
+  dt = convert(CellAdhesionFloat, dt)
 
-    if typeof(force) == Float64
-      force = convert(CellAdhesionFloat,force)
+  while (step <= max_steps) && (v.state == true)
+    step = step + 1
+    setforce!(v, force)
+    update!(v, dt)
+  end
+
+  if verbose == true
+      if v.state == false
+          print("Junction broken")
+      elseif step > max_steps
+          print("Maximum number of iterations reached")
+      end
+  end
+
+  return v.state, force, dt*step, step
+
+
+end
+
+
+function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64; max_steps::Integer = 1000, verbose::Bool = false)
+
+  # Arbitrary force history applied to the junction
+  @assert max_step<=length(force) "Maximum number of steps exceed force vector length"
+
+  step = 1
+
+  force = convert(Vector{CellAdhesionFloat},force)
+  dt = convert(CellAdhesionFloat, dt)
+
+  while (step <= max_steps) && (v.state == true)
+      F = force[step]
+      setforce!(v, F)
+      update!(v, dt)
+      step = step + 1
+  end
+
+  if verbose == true
+      if v.state == false
+          print("Junction broken")
+      elseif step > max_steps
+          print("Maximum number of iterations reached")
+      end
+  end
+
+  return v.state, F, dt*step, step
+
+
+end
+
+
+
+
+function Cluster(n::Vector{N}, l::Vector{M}, model::T, f_model::Vector{Symbol}) where {T<:BondModel, N<:Real, M<:Real}
+  
+  n = convert(Vector{CellAdhesionInt}, n)
+  l = convert(Vector{CellAdhesionFloat}, l)
+
+  Cluster(n, l, model, f_model)
+
+end
+
+function Cluster(n::N, l::M, model::T, f_model::Symbol) where {T<:BondModel, N<:Real, M<:Real}
+  
+  n = convert(CellAdhesionInt, n)
+  l = convert(CellAdhesionFloat, l)
+
+  Cluster(n, l, model, f_model)
+
+end
+
+
+
+function Cluster(n::CellAdhesionInt, l::CellAdhesionFloat, model::T, f_model::Symbol) where T<:BondModel
+
+  u = Vector{Bond{T}}(undef, n)
+
+  for i = 1:1:n
+    u[i] = Bond(model)
+  end
+  x = Cluster(u, false, convert(CellAdhesionFloat, 0.0), f_model, n, l)
+  
+  state!(x)
+
+  return x
+
+end
+
+function Bond(model::T) where T <: BondModel
+
+  K = model.k_on[:k_on_0] / (model.k_on[:k_on_0] + model.k_off[:k_off_0])
+  v = isless(rand(),K)
+
+  return Bond(v, convert(CellAdhesionFloat, 0.0), model)
+
+end
+
+function Cluster(n::Vector{CellAdhesionInt}, l::Vector{CellAdhesionFloat}, model::T, f_model::Vector{Symbol}) where T<:BondModel
+
+  u = Vector{Cluster}(undef, n[1])
+
+  for i = 1:1:n[1]
+    if length(n) == 2
+      u[i] = Cluster(n[2],l[2], model, f_model[2])
     else
-      force = convert(Vector{CellAdhesionFloat},force)
+      u[i] = Cluster(n[2:end], l[2:end], model, f_model[2:end])
     end
+  end
+  x = Cluster(u, false, convert(CellAdhesionFloat, 0.0), f_model[1], n[1], l[1])
 
-    # Constant force
-    if typeof(force) == CellAdhesionFloat
-      force_increment(junction, model, force)
+  state!(x)
 
-      #print(junction.u, "\n")
-
-      while (step <= max_steps) && (junction.state == true)
-          step = step + 1
-          one_step(junction, model)
-      end
-
-      force_break = force
-
-    else 
-
-      # Arbitrary force history applied to the junction
-      @assert max_step<=length(force) "Maximum number of steps exceed force vector length"
-
-      while (step <= max_steps) && (junction.state == true)
-          step = step + 1
-          force_increment(junction, model, force[i])
-          one_step(junction, model)
-      end
-
-      force_break = force[step]
-
-    end
-
-    if verbose == true
-        if junction.state == false
-            print("Junction broken")
-        elseif step > max_steps
-            print("Maximum number of iterations reached")
-        end
-    end
-
-    time_break = model.param["dt"]*step
-
-
-    return force_break, time_break, step
-
+  return x
 
 end
