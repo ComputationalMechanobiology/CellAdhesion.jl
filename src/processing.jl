@@ -66,7 +66,11 @@ end
 function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64; max_steps::Integer = 1000, verbose::Bool = false)
 
   # Arbitrary force history applied to the junction
-  @assert max_step<=length(force) "Maximum number of steps exceed force vector length"
+  n = length(force)
+  @warn max_steps<=n "Maximum number of steps exceed force vector length"
+
+  max_steps = n
+  print("\n Maximum number of steps = ", max_steps, "\n")
 
   step = 1
 
@@ -88,7 +92,7 @@ function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64; max_steps::
       end
   end
 
-  return v.state, F, dt*step, step
+  return v.state, force[step-1], dt*(step-1), (step-1)
 
 
 end
