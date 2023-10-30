@@ -100,10 +100,10 @@ function force_global(v::Cluster)
   
 end
 
-# """
-# force_local
-# Computer force distribution by accounting for the distance of each link from its two closest neighbours
-# """
+"""
+force_local
+Computer force distribution by accounting for the distance of each link from its two closest neighbours
+"""
 
 
 function force_local(v::Cluster)

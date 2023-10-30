@@ -13,7 +13,7 @@ mutable struct Cluster{T}
     f::CellAdhesionFloat                # Force applied to the Interface
     const f_model::Symbol
     const n::CellAdhesionInt
-    const l::CellAdhesionFloat          # Distance between bonds
+    const l::CellAdhesionFloat          # Distance between unit elements
 end
 
 
