@@ -1,5 +1,4 @@
 using Documenter
-using Literate
 using CellAdhesion
 
 """
