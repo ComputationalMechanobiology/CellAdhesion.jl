@@ -1,4 +1,5 @@
 using Documenter
+using Literate
 using CellAdhesion
 
 """
@@ -64,7 +65,7 @@ function maindocbuilder()
             authors = "Alessandra Bonfati, Alexandre Kabla",
             pages = ["Home" => "index.md"])
 
-    deploydocs(repo = "github.com/alebonfanti/CellAdhesion.jl.git",
+    deploydocs(repo = "github.com/ComputationalMechanobiology/CellAdhesion.jl.git",
                deps = nothing,
                make = nothing,
                target = "build")
