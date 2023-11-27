@@ -63,7 +63,8 @@ function maindocbuilder()
             sitename ="CellAdhesion.jl",
             source = "staging-docs",
             authors = "Alessandra Bonfati, Alexandre Kabla",
-            pages = ["Home" => "index.md"])
+            pages = ["Home" => "index.md", 
+            	     "Architecture" => "architecture.md"])
 
     deploydocs(repo = "github.com/ComputationalMechanobiology/CellAdhesion.jl.git",
                deps = nothing,
