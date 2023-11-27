@@ -4,7 +4,6 @@ on:
   push:
     branches: # add more branches as necessary
       - main
-      - doc
     tags: "*"
   pull_request:
 
