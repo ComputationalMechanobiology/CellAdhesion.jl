@@ -18,7 +18,7 @@ function docprepare()
     # copy readme to staging-docs, remove Logo image
     write("docs/staging-docs/index.md", 
             open("README.md") do input
-                readuntil(input, "<!-- delim -->", keep = true)
+                #readuntil(input, "<!-- delim -->", keep = true)
                 read(input)
             end)
     
