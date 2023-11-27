@@ -1,4 +1,17 @@
-export Bond, Cluster, Model, SlipBondModel
+export Bond, Cluster, SlipBondModel
+
+"""
+    Bond(state{Bool}, f::{CellAdhesionFloat}, model)
+
+`Bond` struct contains sate, force and model of a single bond
+
+# Fields
+
+- `state`: false (0)  = open, true (1) = closed
+- `f`: force
+- `t`: time
+- `model`: BondModel describing the bond binding-unbinding dynamics
+"""
 
 mutable struct Bond{T}
     state::Bool   # False 0  = open, True 1 = closed
@@ -6,6 +19,11 @@ mutable struct Bond{T}
     model::T                          # BondModel data type (we do not use pointers -> will see later if necessary) 
 end
 
+
+"""
+    Cluster(u::Vector{Bond,Cluster}, state::{Bool}, f::{CellAdhesionFloat}, f_model::{Symbol}, n::{CellAdhesionInt}, l::{CellAdhesionFloat})
+
+"""
 
 mutable struct Cluster{T}
     u::Vector{T}                     # Unit element       
