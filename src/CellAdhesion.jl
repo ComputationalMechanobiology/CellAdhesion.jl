@@ -11,12 +11,11 @@ export CellAdhesionFloat, CellAdhesionInt
 using Plots
 
 
-
-
-
 include("definitions.jl")
 include("utility.jl")
 include("dynamics.jl")
 include("processing.jl")
+
+export Bond, Cluster, SlipBondModel
 
 end # module

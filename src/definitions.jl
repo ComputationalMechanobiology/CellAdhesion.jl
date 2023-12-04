@@ -1,4 +1,4 @@
-export Bond, Cluster, SlipBondModel
+
 
 """
     Bond(state{Bool}, f::{CellAdhesionFloat}, model)
