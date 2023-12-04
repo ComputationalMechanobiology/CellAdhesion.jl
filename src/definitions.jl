@@ -1,7 +1,7 @@
 
 
 """
-    Bond(state{Bool}, f::{CellAdhesionFloat}, model)
+    Bond(state::{Bool}, f::{CellAdhesionFloat}, model)
 
 `Bond` struct contains sate, force and model of a single bond
 

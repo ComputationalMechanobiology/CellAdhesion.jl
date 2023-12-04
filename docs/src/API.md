@@ -4,13 +4,8 @@ EditURL = "https://github.com/ComputationalMechanobiology/CellAdhesion.jl/edit/m
 ```
 
 ## Main CellAdhesion data structures
-
 ```@autodocs
 Modules = [CellAdhesion]
-Pages = ["definitions.jl"]
+Order   = [:function, :type]
 ```
 
-```@docs
-Bond
-Cluster
-```

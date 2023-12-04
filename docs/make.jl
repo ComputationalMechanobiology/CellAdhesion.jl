@@ -1,6 +1,9 @@
 using Documenter
 using Literate
+using Revise
 using CellAdhesion
+
+DocMeta.setdocmeta!(CellAdhesion, :DocTestSetup, :(using CellAdhesion); recursive = true)
 
 """
     docprepare()
@@ -58,14 +61,14 @@ function maindocbuilder()
 
     # build docs from staging area
     makedocs(modules=[CellAdhesion],
-            doctest = false, clean=true,
+            doctest = true, clean=true,
             format = Documenter.HTML(),
             sitename ="CellAdhesion.jl",
             source = "staging-docs",
             authors = "Alessandra Bonfati, Alexandre Kabla",
             pages = ["Home" => "index.md", 
-            	     "Architecture" => "architecture.md", 
-            	     "API" => "API.md"])
+            	     "Architecture" => "architecture.md"])
+            	     #"API" => "API.md"])
 
     deploydocs(repo = "github.com/ComputationalMechanobiology/CellAdhesion.jl.git",
                deps = nothing,
