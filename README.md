@@ -10,7 +10,7 @@ Features include:
 
 - Junctions life-span can be computed for different loading histories
 
-- Different models for the binding and unbinding probabilities are implemented
+- Different models for computing the binding and unbinding probabilities are implemented
 
 - Junctions with different adhesion molecules, thus bonds with different properties, can be modeled
 
