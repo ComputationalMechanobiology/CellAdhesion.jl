@@ -9,3 +9,11 @@ Bond
 Cluster
 ```
 
+## dynamics.jl functions
+```@docs
+setforce!
+force_global
+force_local
+distance
+```
+

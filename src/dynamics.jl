@@ -1,7 +1,5 @@
 export setforce!
 
-
-
 function k_on(m::SlipBondModel)
   
   return m.k_on[:k_on_0]
@@ -14,34 +12,24 @@ function k_off(m::SlipBondModel, f::CellAdhesionFloat)
 
 end
 
-
-
 #------------------ FORCE -------------------------------------
 
 """
-setforce!(v::Interface, model::Model)
-
-  Compute the force on each link. 
-  Two options are available:
-   - global: equal distribution across all closed bonds
-   - local: inhomogeneous distribution of load accounting fro the distance to its nearest closed neighbor on both sides. 
-
-   This is defined in the model.f variable
+setforce!(v::Cluster{Bond{T}}, F::CellAdhesionFloat)
 
   Input parameters:
     - v: Interface structure
-    - model: Model structure containing the type of load distribution: "local" or "global" (Model.f)
+    - F: Force applied to the cluster
   Output parameters:
     - Updated Interface with force applied to each link
 """
-
-
 function setforce!(v::Cluster{Bond{T}}, F::CellAdhesionFloat) where T <:BondModel
 
   setfield!(v, :f, F)
   distributeforce!(v)
 
 end
+
 
 function setforce!(v::Cluster{Bond{T}}) where T <:BondModel
   
@@ -50,12 +38,12 @@ function setforce!(v::Cluster{Bond{T}}) where T <:BondModel
 end
 
 
-function setforce!(v::Cluster, F::CellAdhesionFloat)
+#function setforce!(v::Cluster, F::CellAdhesionFloat)
 
-  setfield!(v, :f, F)
-  setforce!(v)
+#  setfield!(v, :f, F)
+#  setforce!(v)
 
-end
+#end
 
 
 function setforce!(v::Cluster)
@@ -74,7 +62,6 @@ function setforce!(v::Cluster)
 end
 
 
-
 function distributeforce!(v::Cluster)
 
   #@assert v.f>=0 "Applied stress to Cluster must be positive or equal to zero"
@@ -91,7 +78,6 @@ end
 force_global
 Computer force distribution by equally dividing the force within the closed bonds
 """
-
 function force_global(v::Cluster)
 
   interface_v = getfield.(v.u, :state);
