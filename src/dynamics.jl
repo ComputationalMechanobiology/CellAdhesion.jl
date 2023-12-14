@@ -104,8 +104,6 @@ end
 force_local
 Computer force distribution by accounting for the distance of each link from its two closest neighbours
 """
-
-
 function force_local(v::Cluster)
 
   interface_v = getfield.(v.u, :state);
@@ -127,7 +125,6 @@ distance(v::BitVector, n::Integer)
   Output parameters:
     - l: vector of CellAdhesionFloat containing the distance for each closed bond
 """
-
 function distance(v::BitVector, n::Integer)
 
   @assert !isempty(v) "Bond state vector in Interface is empty"

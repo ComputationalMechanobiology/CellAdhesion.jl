@@ -47,9 +47,11 @@ end
 
 
 """
-print_cluster()
+  print_cluster()
 
-Nice screen print of Cluster structure
+  `print_cluster`
+
+  Nice screen print of Cluster structure
 
 """
 
