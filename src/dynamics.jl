@@ -38,12 +38,12 @@ function setforce!(v::Cluster{Bond{T}}) where T <:BondModel
 end
 
 
-#function setforce!(v::Cluster, F::CellAdhesionFloat)
+function setforce!(v::Cluster, F::CellAdhesionFloat)
 
-#  setfield!(v, :f, F)
-#  setforce!(v)
+  setfield!(v, :f, F)
+  setforce!(v)
 
-#end
+end
 
 
 function setforce!(v::Cluster)
