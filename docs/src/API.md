@@ -12,8 +12,8 @@ Cluster
 ## dynamics.jl functions
 ```@docs
 setforce!
-force_global
-force_local
-distance
+CellAdhesion.force_global
+CellAdhesion.force_local
+CellAdhesion.distance
 ```
 
