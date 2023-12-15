@@ -22,11 +22,12 @@ end
 """
 setforce!(v::Cluster{Bond{T}}, F::CellAdhesionFloat)
 
-  Input parameters:
-    - v: Cluster structure
-    - F: Force applied to the cluster
-  Output parameters:
-    - Updated the force applied to each Cluster structure (within the hierarchical structure)
+Input parameters:
+  - v: Cluster structure
+  - F: Force applied to the cluster
+
+Output parameters:
+  - Updated the force applied to each Cluster structure (within the hierarchical structure)
 """
 function setforce!(v::Cluster{Bond{T}}, F::CellAdhesionFloat) where T <:BondModel
 
@@ -81,6 +82,7 @@ end
 
 """
 force_global(v::Cluster)
+
 Computer force distribution by equally dividing the force within the closed bonds
 """
 function force_global(v::Cluster)
@@ -93,6 +95,7 @@ end
 
 """
 force_local(v::Cluster)
+
 Computer force distribution by accounting for the distance of each link from its two closest neighbours
 """
 function force_local(v::Cluster)
@@ -106,15 +109,16 @@ end
 """
 distance(v::BitVector, n::Integer)
 
-  Compute the distance of each from its two closest closed link on each side. 
-  Used to compute a "local" load distributions across closed bonds.
-  Periodic bondary conditions for the edges.
+Compute the distance of each from its two closest closed link on each side. 
+Used to compute a "local" load distributions across closed bonds.
+Periodic bondary conditions for the edges.
 
-  Input parameters:
-    - v: vector with the state of each single bond
-    - n: number of bonds in the interface
-  Output parameters:
-    - l: vector of CellAdhesionFloat containing the distance for each closed bond
+Input parameters:
+  - v: vector with the state of each single bond
+  - n: number of bonds in the interface
+
+Output parameters:
+  - l: vector of CellAdhesionFloat containing the distance for each closed bond
 """
 function distance(v::BitVector, n::Integer)
 

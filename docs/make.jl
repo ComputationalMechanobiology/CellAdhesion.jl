@@ -67,6 +67,7 @@ function maindocbuilder()
             source = "staging-docs",
             authors = "Alessandra Bonfati, Alexandre Kabla",
             pages = ["Home" => "index.md", 
+            	     "Example: Single junction" => "example_junction.md",
             	     "Architecture" => "architecture.md",
             	     "API" => "API.md"])
 

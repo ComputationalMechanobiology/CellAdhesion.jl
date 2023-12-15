@@ -9,7 +9,19 @@ Bond
 Cluster
 ```
 
-## dynamics.jl functions
+## Processing functions
+```@docs
+CellAdhesion.update!
+runcluster
+```
+
+## Utility functions
+```@docs
+CellAdhesion.state!
+print_cluster
+```
+
+## Dynamics functions
 ```@docs
 setforce!
 CellAdhesion.force_global
@@ -17,15 +29,6 @@ CellAdhesion.force_local
 CellAdhesion.distance
 ```
 
-## utility.jl functions
-```@docs
-CellAdhesion.state!
-print_cluster
-```
 
-## processing.jl functions
-```@docs
-CellAdhesion.update!
-runcluster
-```
+
 
