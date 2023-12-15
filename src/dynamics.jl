@@ -1,5 +1,10 @@
 export setforce!
 
+#------------------ K_ON AND K_OFF FUNCTIONS FOR DIFFERENT STOCHASTIC MODELS -------------------------------------
+
+
+#
+
 function k_on(m::SlipBondModel)
   
   return m.k_on[:k_on_0]
@@ -12,16 +17,16 @@ function k_off(m::SlipBondModel, f::CellAdhesionFloat)
 
 end
 
-#------------------ FORCE -------------------------------------
+#------------------ SET FORCE WITHIN CLUSTER STRUCTURES -------------------------------------
 
 """
 setforce!(v::Cluster{Bond{T}}, F::CellAdhesionFloat)
 
   Input parameters:
-    - v: Interface structure
+    - v: Cluster structure
     - F: Force applied to the cluster
   Output parameters:
-    - Updated Interface with force applied to each link
+    - Updated the force applied to each Cluster structure (within the hierarchical structure)
 """
 function setforce!(v::Cluster{Bond{T}}, F::CellAdhesionFloat) where T <:BondModel
 
@@ -75,7 +80,7 @@ end
 
 
 """
-force_global
+force_global(v::Cluster)
 Computer force distribution by equally dividing the force within the closed bonds
 """
 function force_global(v::Cluster)
@@ -87,7 +92,7 @@ function force_global(v::Cluster)
 end
 
 """
-force_local
+force_local(v::Cluster)
 Computer force distribution by accounting for the distance of each link from its two closest neighbours
 """
 function force_local(v::Cluster)
@@ -107,7 +112,7 @@ distance(v::BitVector, n::Integer)
 
   Input parameters:
     - v: vector with the state of each single bond
-    - n: number of bonds in the junction
+    - n: number of bonds in the interface
   Output parameters:
     - l: vector of CellAdhesionFloat containing the distance for each closed bond
 """

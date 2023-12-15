@@ -1,6 +1,16 @@
 export update!, runcluster, Cluster, Bond
 
 
+"""
+update!(v, dt)
+
+Updates the state of an interface (that can be made of bonds or it can be a hierarchical structure).
+
+Input parameters:
+ - v: interface (this can be a cluster or a bond)
+ - dt: time step of the simulation
+
+"""
 function update!(v::Bond, dt::CellAdhesionFloat)
 
   random = rand();
@@ -31,11 +41,27 @@ function update!(v::Cluster, dt::CellAdhesionFloat)
 
   end
 
-
 end
 
 
+"""
+runcluster(v, force, dt::Float64; max_steps::Integer = 1000, verbose::Bool = false)
 
+Simulates a junction subjected to an external force using a Montecarlo algorithm. 
+
+Input paramters:
+  - v: structure of type Cluster
+  - force: it can either be an constant number (if the junction is subjected to a constant force), or a vector (if the junction is subjected to a varing force)
+  - dt: time step for the simulation
+  - max_steps: maximum number of iterations if the junction doesn't break
+  
+Output paramters:
+  - state of the whole Cluster 
+  - force at which it breaks
+  - time at which it breaks
+  - number of steps after which it breaks
+
+"""
 function runcluster(v::Cluster, force::Float64, dt::Float64; max_steps::Integer = 1000, verbose::Bool = false)
 
   step = 0
@@ -59,9 +85,7 @@ function runcluster(v::Cluster, force::Float64, dt::Float64; max_steps::Integer 
 
   return v.state, force, dt*step, step
 
-
 end
-
 
 function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64; max_steps::Integer = 1000, verbose::Bool = false)
 
@@ -102,27 +126,22 @@ end
 
 
 
+"""
+Cluster(n, l, model, f_model)
 
-function Cluster(n::Vector{N}, l::Vector{M}, model::T, f_model::Vector{Symbol}) where {T<:BondModel, N<:Real, M<:Real}
-  
-  n = convert(Vector{CellAdhesionInt}, n)
-  l = convert(Vector{CellAdhesionFloat}, l)
+Initiates a Cluster structure
 
-  Cluster(n, l, model, f_model)
+Input paramters:
+ - n: if it is a single number it represents the number of bonds in the junction, if it is a vector it creates a hierarchical structure 
+      where each element in the vector represents the number of subunits per hierarchical level. 
+ - l: if it is a single number it represents the distance between bonds, if it is a vector each element is the distance between the subunits
+ - model: type of BondModel to compute the probability of binding and unbinding
+ - f_model: "global" or "local". It defines the method used to redistribute the force across subunits (Bonds or other Clusters if it is a hierarchical structure)
 
-end
-
-function Cluster(n::N, l::M, model::T, f_model::Symbol) where {T<:BondModel, N<:Real, M<:Real}
-  
-  n = convert(CellAdhesionInt, n)
-  l = convert(CellAdhesionFloat, l)
-
-  Cluster(n, l, model, f_model)
-
-end
-
-
-
+Output paramters:
+ - Cluster data structure
+ """
+ 
 function Cluster(n::CellAdhesionInt, l::CellAdhesionFloat, model::T, f_model::Symbol) where T<:BondModel
 
   u = Vector{Bond{T}}(undef, n)
@@ -135,15 +154,6 @@ function Cluster(n::CellAdhesionInt, l::CellAdhesionFloat, model::T, f_model::Sy
   state!(x)
 
   return x
-
-end
-
-function Bond(model::T) where T <: BondModel
-
-  K = model.k_on[:k_on_0] / (model.k_on[:k_on_0] + model.k_off[:k_off_0])
-  v = isless(rand(),K)
-
-  return Bond(v, convert(CellAdhesionFloat, 0.0), model)
 
 end
 
@@ -165,3 +175,36 @@ function Cluster(n::Vector{CellAdhesionInt}, l::Vector{CellAdhesionFloat}, model
   return x
 
 end
+
+
+# These functions convert the inputs in the correct data type (CellAdhesionInt and CellAdhesionFloat)
+
+function Cluster(n::Vector{N}, l::Vector{M}, model::T, f_model::Vector{Symbol}) where {T<:BondModel, N<:Real, M<:Real}
+  
+  n = convert(Vector{CellAdhesionInt}, n)
+  l = convert(Vector{CellAdhesionFloat}, l)
+
+  Cluster(n, l, model, f_model)
+
+end
+
+function Cluster(n::N, l::M, model::T, f_model::Symbol) where {T<:BondModel, N<:Real, M<:Real}
+  
+  n = convert(CellAdhesionInt, n)
+  l = convert(CellAdhesionFloat, l)
+
+  Cluster(n, l, model, f_model)
+
+end
+
+
+
+function Bond(model::T) where T <: BondModel
+
+  K = model.k_on[:k_on_0] / (model.k_on[:k_on_0] + model.k_off[:k_off_0])
+  v = isless(rand(),K)
+
+  return Bond(v, convert(CellAdhesionFloat, 0.0), model)
+
+end
+

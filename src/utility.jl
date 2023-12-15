@@ -2,12 +2,21 @@
 export print_cluster
 
 
+"""
+state!(v)
+
+Updates the state field of a Cluster or a Bond.
+When all the subunits are open, then the state of the structure is set to open. Otherwise, it is close.   
+
+Input paramters:
+  - v: interface that can either be a Cluster or a Bond. 
+
+"""
 function state!(v::Bond)
 
   return getfield(v, :state)
 
 end
-
 
 function state!(v::Cluster)
 
@@ -30,12 +39,11 @@ end
 
 
 
-"""
+"
 Base.setproperty!   
 
 Definition to update Interface struct fields
-"""
-
+"
 
 function Base.setproperty!(x::Cluster, s::Symbol, new_x::Vector{CellAdhesionFloat})
 
@@ -46,15 +54,15 @@ function Base.setproperty!(x::Cluster, s::Symbol, new_x::Vector{CellAdhesionFloa
 end
 
 
-"""
-  print_cluster()
 
-  `print_cluster`
-
-  Nice screen print of Cluster structure
 
 """
+  print_cluster(x)
 
+
+  Nice screen print of Cluster structure or Bond (x)
+
+"""
 function print_cluster(x::Bond) 
 
   print("state = ", x.state, ", force = ", x.f, "\n")
