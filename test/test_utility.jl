@@ -75,3 +75,32 @@ function _check_state()
 end
 
 @test _check_state()
+
+
+
+
+function _check_plot()
+    model1 = SlipBondModel((k_on_0=0.2,), (k_off_0=0.8, f_1e=1))
+    n = convert(CellAdhesionInt, 10)
+    l = convert(CellAdhesionFloat, 1.0)
+    F = convert(CellAdhesionFloat, 60.0)
+  
+    force_string = :force_global
+    v1 = Cluster(Bond.([true,false,true,true,false,true,false,false,true,true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model1], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+    v2 = Cluster(Bond.([true,true,true,true,true,true,false,false,true,true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model1], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+
+    int_1 = Cluster([v1, v2], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l)
+  
+    p1 = plot()
+    plot_cluster(v1,p1,1,0)
+    savefig(p1, "plot_cluster_bonds.png")
+
+    # p2 = plot()
+    # plot_cluster(int_1,p2,1)
+    # savefig(p2, "plot_cluster.png")
+
+    1==1
+
+end
+
+@test _check_plot()

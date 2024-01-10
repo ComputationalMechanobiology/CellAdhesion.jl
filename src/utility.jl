@@ -1,5 +1,5 @@
 
-export print_cluster
+export print_cluster, plot_cluster
 
 
 """
@@ -63,25 +63,25 @@ end
   Nice screen print of Cluster structure or Bond (x)
 
 """
-function print_cluster(x::Bond) 
+function print_cluster(v::Bond) 
 
-  print("state = ", x.state, ", force = ", x.f, "\n")
-  print("model = ", x.model, "\n")
+  print("state = ", v.state, ", force = ", v.f, "\n")
+  print("model = ", v.model, "\n")
   print("--- \n")
 
 end
 
-function print_cluster(x::Cluster)
+function print_cluster(v::Cluster)
   print("********** \n")
-  print("Cluster type: ", typeof(x), "\n")
-  print("Type of Units = ", typeof(x.u), "\n")
-  print("State = ", x.state, ", force = ", x.f, "\n")
-  print("Force model = ", x.f_model, ", n = ", x.n, ", l = ", x.l, "\n")
+  print("Cluster type: ", typeof(v), "\n")
+  print("Type of Units = ", typeof(v.u), "\n")
+  print("State = ", v.state, ", force = ", v.f, "\n")
+  print("Force model = ", v.f_model, ", n = ", v.n, ", l = ", v.l, "\n")
   print("********** \n")
 
-  for i = 1:1:x.n
+  for i = 1:1:v.n
 
-    k = x.u[i]
+    k = v.u[i]
     print_cluster(k)
 
     
@@ -89,3 +89,52 @@ function print_cluster(x::Cluster)
 
 
 end  
+
+
+
+
+
+
+
+function plot_cluster(v::Cluster{Bond{T}}, p, x, y) where T <:BondModel
+
+  for i = 1:1:v.n
+
+    if v.u[i].state == true 
+      color = :black 
+    else
+      color = :white 
+    end
+
+
+    scatter!(p, [x], [y + i*v.l], color = color, markerstrokecolor = color, markershape = :square, label="")
+
+  end
+
+end
+
+
+
+# NOT WORKING!!!!!!!
+
+function plot_cluster(v::Cluster, p, x,)
+
+
+  for i = 1:1:v.n
+
+    k = v.u[i]
+    plot_cluster(k, p, x, (i-1)*v.l)
+
+    
+  end
+
+
+end 
+
+# function plot_bonds(p, v::Cluster)
+
+#   v.u is a vector of Cluster -> nothing
+#   v.u is a vector of bonds -> plot
+
+
+# end
