@@ -98,21 +98,10 @@ end
 # optimised plot_cluster function
 function plot_cluster(v::Cluster{Bond{T}}, p, x, y) where T <: BondModel
   states = [bond.state for bond in v.u]
-  colors = ifelse.(states, :black, :white)
+  colors = ifelse.(states, :white, :black)
   y_offsets = y .+ (1:v.n) .* v.l
   scatter!(p, repeat([x], v.n), y_offsets, color = colors, markerstrokecolor = colors, markershape = :square, label="")
 end
-
-# function plot_cluster(v::Cluster{Bond{T}}, p, x, y) where T <:BondModel
-#   for i = 1:1:v.n
-#     if v.u[i].state == true 
-#       color = :black 
-#     else
-#       color = :white 
-#     end
-#     scatter!(p, [x], [y + i*v.l], color = color, markerstrokecolor = color, markershape = :square, label="")
-#   end
-# end
 
 
 function plot_cluster(v::Cluster, p, x)
@@ -122,10 +111,3 @@ function plot_cluster(v::Cluster, p, x)
   end
 end 
 
-# function plot_bonds(p, v::Cluster)
-
-#   v.u is a vector of Cluster -> nothing
-#   v.u is a vector of bonds -> plot
-
-
-# end
