@@ -89,15 +89,15 @@ function _check_plot()
     v1 = Cluster(Bond.([true,false,true,true,false,true,false,false,true,true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model1], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
     v2 = Cluster(Bond.([true,true,true,true,true,true,false,false,true,true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model1], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
 
-    int_1 = Cluster([v1, v2], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l)
+    int_1 = Cluster([v1, v2], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l*n)
   
     p1 = plot()
     plot_cluster(v1,p1,1,0)
     savefig(p1, "plot_cluster_bonds.png")
 
-    # p2 = plot()
-    # plot_cluster(int_1,p2,1)
-    # savefig(p2, "plot_cluster.png")
+    p2 = plot()
+    plot_cluster(int_1,p2,1)
+    savefig(p2, "plot_cluster.png")
 
     1==1
 
