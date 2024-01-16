@@ -23,16 +23,15 @@ function _check_print()
     model1 = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
     model2 = SlipBondModel((k_on_0=0.2,), (k_off_0=0.8, f_1e=1))
     n = convert(CellAdhesionInt, 3)
-    l = convert(CellAdhesionFloat, 1.0)
+    l1 = convert(CellAdhesionFloat, 1.0)
+    l2 = convert(CellAdhesionFloat, 2.0)
+    l3 = convert(CellAdhesionFloat, 2.0)
     F = convert(CellAdhesionFloat, 60.0)
   
     force_string = :force_global
-    v1 = Cluster(Bond.([true,true,true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model1], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
-    v2 = Cluster(Bond.([true,true,true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model2], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
-    int_1 = Cluster([v1, v2], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l)
-  
-
-    #print_cluster(int_1)
+    v1 = Cluster(Bond.([true,true,true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model1], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l1)
+    v2 = Cluster(Bond.([true,true,true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model2], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l2)
+    int_1 = Cluster([v1, v2], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l3)
 
     1==1
 
@@ -71,7 +70,7 @@ function _check_state()
      && (int_1.u[2].u[2].state == true)
      && (int_1.u[3].u[1].state == false)
      && (int_1.u[3].u[2].state == false))
-
+	
 end
 
 @test _check_state()
@@ -82,15 +81,17 @@ end
 function _check_plot()
     model1 = SlipBondModel((k_on_0=0.2,), (k_off_0=0.8, f_1e=1))
     n = convert(CellAdhesionInt, 10)
-    l = convert(CellAdhesionFloat, 1.0)
+    l1 = convert(CellAdhesionFloat, 1.0)
+    l2 = convert(CellAdhesionFloat, 2.0)
+    l3 = convert(CellAdhesionFloat, 2.0)
     F = convert(CellAdhesionFloat, 60.0)
   
     force_string = :force_global
-    v1 = Cluster(Bond.([true,false,true,true,false,true,false,false,true,true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model1], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
-    v2 = Cluster(Bond.([true,true,true,true,true,true,false,false,true,true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model1], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+    v1 = Cluster(Bond.([false,false,false,true,false,true,false,false,false,false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model1], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l1)
+    v2 = Cluster(Bond.([false,false,true,false,false,false,false,false,false,false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model1], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l2)
 
-    int_1 = Cluster([v1, v2], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l*n)
-  
+    int_1 = Cluster([v1, v2], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), (l1+l2)*n)
+    
     p1 = plot()
     plot_cluster(v1,p1,1,0)
     savefig(p1, "plot_cluster_bonds.png")
