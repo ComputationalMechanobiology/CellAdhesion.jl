@@ -54,7 +54,7 @@ end
 
 function setforce!(v::Cluster)
 
-  if v.state == true
+  #if v.state == true
 
     distributeforce!(v)
 
@@ -63,7 +63,7 @@ function setforce!(v::Cluster)
       setforce!(k)  
     end
 
-  end
+  # end
 
 end
 
@@ -88,8 +88,11 @@ Computer force distribution by equally dividing the force within the closed bond
 function force_global(v::Cluster)
 
   interface_v = getfield.(v.u, :state);
-  
-  return interface_v .* v.f./sum(interface_v)
+  if sum(interface_v) == 0
+  	return interface_v .* convert(CellAdhesionFloat, sum(interface_v))
+  else
+  	return interface_v .* v.f./sum(interface_v)
+  end
   
 end
 

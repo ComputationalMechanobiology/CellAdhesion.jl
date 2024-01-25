@@ -58,19 +58,23 @@ function _check_force_bonds_global(tol)
     v1 = Cluster(Bond.([true,true,true,true,true,true,true,true,true,true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
     v2 = Cluster(Bond.([false,true,false,true,false,false,false,false,false,false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
     v3 = Cluster(Bond.([false,true,true,false,false,false,false,true,false,true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+    v4 = Cluster(Bond.([false,false,false,false,false,false,false,false,false,false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
 
     F = convert(CellAdhesionFloat, 10.0)
     setforce!(v1, F)
     setforce!(v2, F)
     setforce!(v3, F)
+    setforce!(v4, F)
 
     f1 = getfield.(v1.u, :f)
     f2 = getfield.(v2.u, :f)
     f3 = getfield.(v3.u, :f)
+    f4 = getfield.(v4.u, :f)
 
     ((f1 == repeat([1.0], 10)) 
       && (f2==[0.0, 5.0, 0.0, 5.0, 0.0, 0.0,0.0,0.0,0.0,0.0]) 
-      && (f3==[0.0, 2.5, 2.5, 0.0, 0.0, 0.0,0.0, 2.5,0.0, 2.5]))
+      && (f3==[0.0, 2.5, 2.5, 0.0, 0.0, 0.0,0.0, 2.5,0.0, 2.5])
+      && (f4==[0.0, 0.0, 0.0, 0.0, 0.0, 0.0,0.0, 0.0,0.0, 0.0]))
 
 end
 
@@ -277,7 +281,7 @@ end
 @test _check_force_clusters2levels_local(tol)
 
 
-function _check_force_clusters2levels_local_test2(tol)
+function _check_force_clusters2levels_global_test2(tol)
 
   model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
   n = convert(CellAdhesionInt, 4)
@@ -286,15 +290,15 @@ function _check_force_clusters2levels_local_test2(tol)
 
   force_string = :force_global
   v1 = Cluster(Bond.([true,false, true, true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
-  v2 = Cluster(Bond.([false,false, false, false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
-  v3 = Cluster(Bond.([true,true, false, false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  #v2 = Cluster(Bond.([false,false, false, false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  #v3 = Cluster(Bond.([true,true, false, false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
   v4 = Cluster(Bond.([true,false, true, true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), true, convert(CellAdhesionFloat, 0.0), force_string, n, l)
-  v5 = Cluster(Bond.([false,false, false, false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
+  #v5 = Cluster(Bond.([false,false, false, false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
   v6 = Cluster(Bond.([false,false, false, false], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
 
-  c1 = Cluster([v1, v2], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l)
-  c2 = Cluster([v3, v4], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l)
-  c3 = Cluster([v5, v6], false, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 2), l)
+  c1 = Cluster([v1], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 1), l)
+  c2 = Cluster([v4], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 1), l)
+  c3 = Cluster([v6], false, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 1), l)
   
   int_1 = Cluster([c1, c2, c3], true, convert(CellAdhesionFloat, 0.0), force_string, convert(CellAdhesionInt, 3), l)
   setforce!(int_1, F)
@@ -306,15 +310,12 @@ function _check_force_clusters2levels_local_test2(tol)
       f_check_2 = f_check_2 + sum(getfield.(int_1.u[i].u, :f))
   end
 
-
   ((int_1.f == f_check_1) 
     && (int_1.f == f_check_2)) 
 
 end
 
-@test _check_force_clusters2levels_local_test2(tol)
-
-
+@test _check_force_clusters2levels_global_test2(tol)
 
 
 

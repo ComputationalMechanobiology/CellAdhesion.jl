@@ -31,11 +31,11 @@ function _check_KineticMonteCarlo_ClusterBonds(tol)
   setforce!(v3, F)
   update!(v3, convert(CellAdhesionFloat,10))
   setforce!(v3, F)
- 
+
 
   (
     isapprox(getfield.(v1.u, :state), [false,false,false,false], atol=tol)
-    && isapprox(getfield.(v2.u, :state), [false,false,false,false], atol=tol)
+    && isapprox(getfield.(v2.u, :state), [true, true, true, true], atol=tol)
     && isapprox(getfield.(v3.u, :state), [true,true,true,true], atol=tol)
   )
 
@@ -84,8 +84,8 @@ function _check_KineticMonteCarlo_ClusterCluster(tol)
     && isapprox(getfield.(int_1.u[2].u, :state), [false,false,false,false], atol=tol)
     && isapprox(getfield.(int_2.u[1].u, :state), [true,true,true, true], atol=tol)
     && isapprox(getfield.(int_2.u[2].u, :state), [true,true,true, true], atol=tol)
-    && isapprox(getfield.(int_3.u[1].u, :state), [false,false,false, false], atol=tol)
-    && isapprox(getfield.(int_3.u[2].u, :state), [false,false,false, false], atol=tol)
+    && isapprox(getfield.(int_3.u[1].u, :state), [true,true,true, true], atol=tol)
+    && isapprox(getfield.(int_3.u[2].u, :state), [true,true,true, true], atol=tol)
   )
 
 
@@ -120,17 +120,18 @@ function _check_KineticMonteCarlo_Cluster2(tol)
   update!(int_1, convert(CellAdhesionFloat, 1))
   setforce!(int_1, F)
 
+
   (
-    isapprox(getfield.(int_1.u, :state), [true, true, false], atol=tol)
-    && isapprox(getfield.(int_1.u[1].u, :state), [true, false], atol=tol)
+    isapprox(getfield.(int_1.u, :state), [true, true, true], atol=tol)
+    && isapprox(getfield.(int_1.u[1].u, :state), [true, true], atol=tol)
     && isapprox(getfield.(int_1.u[2].u, :state), [true, true], atol=tol)
-    && isapprox(getfield.(int_1.u[3].u, :state), [false, false], atol=tol)
+    && isapprox(getfield.(int_1.u[3].u, :state), [true, true], atol=tol)
     && isapprox(getfield.(int_1.u[1].u[1].u, :state), [true, true, true, true], atol=tol)
-    && isapprox(getfield.(int_1.u[1].u[2].u, :state), [false, false, false, false], atol=tol)
+    && isapprox(getfield.(int_1.u[1].u[2].u, :state), [true,true,true, true], atol=tol)
     && isapprox(getfield.(int_1.u[2].u[1].u, :state), [true, true, true, true], atol=tol)
     && isapprox(getfield.(int_1.u[2].u[2].u, :state), [true, true, true, true], atol=tol)
-    && isapprox(getfield.(int_1.u[3].u[1].u, :state), [false, false, false, false], atol=tol)
-    && isapprox(getfield.(int_1.u[3].u[2].u, :state), [false, false, false, false], atol=tol)
+    && isapprox(getfield.(int_1.u[3].u[1].u, :state), [true,true,true, true], atol=tol)
+    && isapprox(getfield.(int_1.u[3].u[2].u, :state), [true,true,true, true], atol=tol)
 
   )
 
@@ -216,7 +217,7 @@ function _check_runcluster(tol)
 
   for sim = 1:1:N
     x = Cluster(50, 1.0, model, :force_global)
-    state, stress_break_v[sim], time_break_v[sim], step = runcluster(x, 50*0.2, 0.01, max_steps = 500000)
+    state, stress_break_v[sim], time_break_v[sim], step = runcluster(x, 50*0.2, 0.01, max_steps = 500000, state_check = true)
   end
   stress_break_mean = mean(stress_break_v)
   time_break_mean = mean(time_break_v)
@@ -227,13 +228,11 @@ function _check_runcluster(tol)
 
   for sim = 1:1:N
     x = Cluster(50, 1.0, model, :force_local)
-    state, stress_break_v1[sim], time_break_v1[sim], step = runcluster(x, 50*0.2, 0.01, max_steps = 500000)
+    state, stress_break_v1[sim], time_break_v1[sim], step = runcluster(x, 50*0.2, 0.01, max_steps = 500000, state_check = true)
   end
   stress_break_mean1 = mean(stress_break_v1)
   time_break_mean1 = mean(time_break_v1)
 
-  #print(time_break_mean, "\n")
-  #print(time_break_mean1, "\n")
 
 
   (time_break_mean>time_break_mean1) && (time_break_mean<20.0) && (time_break_mean>10.0)
@@ -242,3 +241,36 @@ end
 
 @test _check_runcluster(tol)
 
+
+function _check_runcluster_statecheck(tol)
+
+  model = SlipBondModel((k_on_0=3e-3,), (k_off_0=3e-4, f_1e=0.055))
+
+  N = 20
+
+  stress_break_v = zeros(N)
+  time_break_v = zeros(N)
+
+  for sim = 1:1:N
+    x = Cluster(50, 1.0, model, :force_global)
+    state, stress_break_v[sim], time_break_v[sim], step = runcluster(x, 50*0.2, 0.01, max_steps = 2000, state_check = false)
+  end
+  stress_break_mean = mean(stress_break_v)
+  time_break_mean = mean(time_break_v)
+
+
+  stress_break_v1 = zeros(N)
+  time_break_v1 = zeros(N)
+
+  for sim = 1:1:N
+    x = Cluster(50, 1.0, model, :force_local)
+    state, stress_break_v1[sim], time_break_v1[sim], step = runcluster(x, 50*0.2, 0.01, max_steps = 1000, state_check = false)
+  end
+  stress_break_mean1 = mean(stress_break_v1)
+  time_break_mean1 = mean(time_break_v1)
+
+ (isapprox(time_break_mean, 20.0, atol=0.015)) && (isapprox(time_break_mean1, 10.0, atol=0.015))
+
+end
+
+@test _check_runcluster_statecheck(tol)

@@ -22,7 +22,7 @@ end
 
 function update!(v::Cluster, dt::CellAdhesionFloat)
 
-  if v.state == true
+  #if v.state == true
 
     for i = 1:1:v.n 
       k = v.u[i]
@@ -39,7 +39,7 @@ function update!(v::Cluster, dt::CellAdhesionFloat)
     # Update the state value of the junction
     setfield!(v, :state, !state)
 
-  end
+  # end
 
 end
 
@@ -62,18 +62,26 @@ Output paramters:
   - number of steps after which it breaks
 
 """
-function runcluster(v::Cluster, force::Float64, dt::Float64; max_steps::Integer = 1000, verbose::Bool = false)
+function runcluster(v::Cluster, force::Float64, dt::Float64; state_check::Bool = true, max_steps::Integer = 1000, verbose::Bool = false)
 
   step = 0
-
   force = convert(CellAdhesionFloat,force)
   dt = convert(CellAdhesionFloat, dt)
 
-  while (step <= max_steps) && (v.state == true)
-    step = step + 1
-    setforce!(v, force)
-    update!(v, dt)
+  if state_check == true
+    while (step <= max_steps) && (v.state == true)
+      step = step + 1
+      setforce!(v, force)
+      update!(v, dt)
+    end
+  else
+    while (step <= max_steps)
+      step = step + 1
+      setforce!(v, force)
+      update!(v, dt)
+    end
   end
+
 
   if verbose == true
       if v.state == false
