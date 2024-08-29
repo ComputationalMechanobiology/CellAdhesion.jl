@@ -134,6 +134,48 @@ end
 
 
 
+function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64, file_name::String; max_steps::Integer = 1000, verbose::Bool = false)
+
+  # Arbitrary force history applied to the junction
+  n = length(force)
+
+  if max_steps > n
+         @warn max_steps<=n "Maximum number of steps exceed force vector length"
+  	 max_steps = n
+         print("\n Maximum number of steps = ", max_steps, "\n")
+  end
+  
+
+  step = 1
+  p = plot()
+  plot_cluster(v, p, step, 0)
+
+  force = convert(Vector{CellAdhesionFloat},force)
+  dt = convert(CellAdhesionFloat, dt)
+
+  while (step <= max_steps) && (v.state == true)
+      F = force[step]
+      setforce!(v, F)
+      update!(v, dt)
+      step = step + 1
+      plot_cluster(v, p, step, 0)
+  end
+
+  if verbose == true
+      if v.state == false
+          print("Junction broken")
+      elseif step > max_steps
+          print("Maximum number of iterations reached")
+      end
+  end
+
+  savefig(p, file_name)
+
+  return v.state, force[step-1], dt*(step-1), (step-1)
+
+
+end
+
 
 
 
