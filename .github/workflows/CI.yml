@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ '*' ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }} - ${{ github.event_name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - '1.6'  # Minimum supported version
+          - '1'    # Latest stable release
+          - 'nightly'
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        arch:
+          - x64
+        include:
+          # Add minimum supported version on all OS/arch combinations
+          - version: '1.6'
+            os: ubuntu-latest
+            arch: x64
+          - version: '1.6'
+            os: macos-latest
+            arch: x64
+          - version: '1.6'
+            os: windows-latest
+            arch: x64
+        exclude:
+          # Exclude nightly on Windows (often problematic)
+          - version: 'nightly'
+            os: windows-latest
+            arch: x64
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+          
+      - uses: julia-actions/cache@v1
+      
+      - name: Install dependencies
+        run: julia --project=@. -e 'using Pkg; Pkg.instantiate();'
+        
+      - name: Run tests
+        run: julia --project=@. -e 'using Pkg; Pkg.test(coverage=true)'
+        
+      - name: Submit coverage
+        if: matrix.version != 'nightly' && matrix.os == 'ubuntu-latest'
+        uses: codecov/codecov-action@v4
+        with:
+          file: lcov.info
