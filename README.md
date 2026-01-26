@@ -1,6 +1,6 @@
 ﻿<a name="logo"/>
 <div align="center">
-<img src="https://raw.githubusercontent.com/ComputationalMechanobiology/CellAdhesion.jl/master/docs/src/assets/logo_colour.png" height="100"></img>
+<img src="https://raw.githubusercontent.com/ComputationalMechanobiology/CellAdhesion.jl/master/docs/src/assets/logo_colour.png" height="70"></img>
 </a>
 </div>
 <!-- delim -->
