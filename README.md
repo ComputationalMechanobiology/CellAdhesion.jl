@@ -1,3 +1,11 @@
+﻿<a name="logo"/>
+<div align="center">
+<img src="https://raw.githubusercontent.com/ComputationalMechanobiology/CellAdhesion.jl/master/docs/src/assets/logo_colours.png" height="130"></img>
+</a>
+</div>
+<!-- delim -->
+
+
 # CellAdhesion
 
 
