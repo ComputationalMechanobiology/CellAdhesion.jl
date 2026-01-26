@@ -16,7 +16,6 @@ jobs:
       matrix:
         version:
           - '1.10'  # Minimum supported version
-          - '1.8'    # Latest stable release
           - 'nightly'
         os:
           - ubuntu-latest
