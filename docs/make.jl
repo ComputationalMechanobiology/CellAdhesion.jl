@@ -71,10 +71,16 @@ function maindocbuilder()
             	     "Architecture" => "architecture.md",
             	     "API" => "API.md"])
 
-    deploydocs(repo = "github.com/ComputationalMechanobiology/CellAdhesion.jl.git",
-               deps = nothing,
-               make = nothing,
-               target = "build")
+    # deploydocs(repo = "github.com/ComputationalMechanobiology/CellAdhesion.jl.git",
+    #           deps = nothing,
+    #           make = nothing,
+     #          target = "build")
+
+    deploydocs(
+           repo = "github.com/ComputationalMechanobiology/CellAdhesion.jl.git",
+           deploy_config = Documenter.GitHubActions()
+    )
+
                
 
 end
