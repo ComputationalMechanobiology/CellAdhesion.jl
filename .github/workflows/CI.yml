@@ -15,8 +15,8 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.6'  # Minimum supported version
-          - '1'    # Latest stable release
+          - '1.10'  # Minimum supported version
+          - '1.8'    # Latest stable release
           - 'nightly'
         os:
           - ubuntu-latest
@@ -26,13 +26,13 @@ jobs:
           - x64
         include:
           # Add minimum supported version on all OS/arch combinations
-          - version: '1.6'
+          - version: '1.10'
             os: ubuntu-latest
             arch: x64
-          - version: '1.6'
+          - version: '1.10'
             os: macos-latest
             arch: x64
-          - version: '1.6'
+          - version: '1.10'
             os: windows-latest
             arch: x64
         exclude:
