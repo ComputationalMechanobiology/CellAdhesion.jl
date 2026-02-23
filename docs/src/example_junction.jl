@@ -6,7 +6,8 @@ using CellAdhesion
 using Plots
 using Statistics
 
-# ## Example with constant force
+# ## Slip bond model
+# ### Example with constant force
 
 # - Define the parameters for the Slip bond model for the junction
 # - Generate a junction made of 20 bonds
@@ -62,7 +63,7 @@ ylabel!("Time (s)")
 
 
 
-# ## Example with varing force (linear force variation)
+# ### Example with varing force (linear force variation)
 
 # We define force ramps with different deformation rates (0.5%/s, 1%/s, 2%/s, 3%/s)
 rates = [0.005, 0.01, 0.02, 0.03]
@@ -121,3 +122,55 @@ xlabel!("Rate (%/s)")
 ylabel!("Force (N)")
 
 plot!(p1,p2)
+
+# ## Catch bond model
+# ### Example with constant force
+
+# Define the BondModel to compute the binding-unbinding rate
+model = CatchBondModel((k_on_0 = 0.5,), (k_off_0s = 1e-4, f_1es = 1.0, k_off_0c = 1e-2, f_1ec = 1.0))
+
+# Define the Cluster data structure parameters
+N = 25;      # Number of bonds
+l = 1.0;     # Distance between bonds
+
+# Define the range of constant forces to be applied
+F = collect(95.0:110.0);
+
+# Run the Montecarlo simulations for different level of forces, 50 times each
+n = 10;            # Number of simulations
+n_f = length(F);    # Number of different forces to apply to the junction
+
+time_break_F = zeros(n_f)  # Vector with mean rupture time for the different applied forces
+
+p = plot()
+
+## For loop on the applied Force (F)
+for j = 1:1:n_f
+
+    stress_break_v = zeros(n)
+    time_break_v = zeros(n)
+
+    ## For loop on the different simulations for each scenario (n)
+    for sim = 1:1:n
+
+        ## Initiate the junction (Cluster data structure)
+        x = Cluster(N, l, model, :force_global)
+
+        ## Run the Montecarlo simulation until it breaks or it reaches the maximum number of iterations
+        state, stress_break_v[sim], time_break_v[sim], step = runcluster(x, F[j], 0.01, max_steps = 500000)
+
+    end
+    
+    ## Plot all rupture time for all the simulations
+    scatter!(p, repeat([F[j]],n), time_break_v, label = "", mc="#1E88E5", ms=4, ma=1)
+
+    ## Compute the mean rupture time
+    time_break_F[j] = mean(time_break_v)
+end
+
+
+# Plot the average rupture time as a function of the applied force
+scatter!(p, F.+0.1, time_break_F, label="Mean", mc="#D81B60", ms=4, ma=1)
+xlabel!("Force (N)")
+ylabel!("Time (s)")
+title!("Catch bond model - constant force")

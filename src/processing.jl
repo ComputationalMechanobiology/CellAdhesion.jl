@@ -257,7 +257,7 @@ end
 
 
 
-function Bond(model::T) where T <: BondModel
+function Bond(model::SlipBondModel)
 
   K = model.k_on[:k_on_0] / (model.k_on[:k_on_0] + model.k_off[:k_off_0])
   v = isless(rand(),K)
@@ -265,4 +265,15 @@ function Bond(model::T) where T <: BondModel
   return Bond(v, convert(CellAdhesionFloat, 0.0), model)
 
 end
+
+function Bond(model::CatchBondModel)
+
+  K = model.k_on[:k_on_0] / (model.k_on[:k_on_0] + model.k_off[:k_off_0s]+ model.k_off[:k_off_0c])
+  v = isless(rand(),K)
+
+  return Bond(v, convert(CellAdhesionFloat, 0.0), model)
+
+end
+
+
 
