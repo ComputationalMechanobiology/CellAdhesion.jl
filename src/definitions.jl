@@ -49,6 +49,22 @@ struct SlipBondModel <: BondModel
 
 end
 
+
+struct CatchBondModel <: BondModel
+    k_on::NamedTuple
+    k_off::NamedTuple
+
+    function CatchBondModel(k_on::NamedTuple, k_off::NamedTuple)
+        k_on_0 = convert(CellAdhesionFloat, k_on[:k_on_0])
+        k_off_0s = convert(CellAdhesionFloat, k_off[:k_off_0s])
+        f_1es = convert(CellAdhesionFloat, k_off[:f_1es])
+        k_off_0c = convert(CellAdhesionFloat, k_off[:k_off_0c])
+        f_1ec = convert(CellAdhesionFloat, k_off[:f_1ec])
+        new((k_on_0 = k_on_0,), (k_off_0s = k_off_0s, f_1es = f_1es, k_off_0c = k_off_0c, f_1ec = f_1ec))
+    end
+
+end
+
 # Interface = Cluster{Cluster}
 
 

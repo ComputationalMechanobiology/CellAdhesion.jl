@@ -4,7 +4,7 @@ println("Testing dynamics.jl")
 println("===============================================")
 
 
-function _check_k_on(tol)
+function _check_k_on_SlipBond(tol)
 
   model = SlipBondModel((k_on_0 = 0.2,), (k_off_0 = 0.8, f_1e = 1.0))
   k_on_bond = CellAdhesion.k_on(model)
@@ -12,11 +12,10 @@ function _check_k_on(tol)
   k_on_bond == 0.2
 
 end
+_check_k_on_SlipBond(tol)
 
-_check_k_on(tol)
 
-
-function _check_k_off(tol)
+function _check_k_off_SlipBond(tol)
 
   model = SlipBondModel((k_on_0 = 0.2,), (k_off_0 = 0.8, f_1e = 1.0))
   k_off_bond = CellAdhesion.k_off(model, convert(CellAdhesionFloat, 2.0))
@@ -24,8 +23,38 @@ function _check_k_off(tol)
   k_off_bond == 0.8*exp(2)
 
 end
+_check_k_off_SlipBond(tol)
 
-_check_k_off(tol)
+
+function _check_k_on_CatchBond(tol)
+
+  model = CatchBondModel((k_on_0 = 1.0,), (k_off_0s = 1e-4, f_1es = 1.0, k_off_0c = 1e-2, f_1ec = 1.0))
+  k_on_bond = CellAdhesion.k_on(model)
+
+  k_on_bond == 0.2
+
+end
+_check_k_on_CatchBond(tol)
+
+
+function _check_k_off_CatchBond(tol)
+
+  model = CatchBondModel((k_on_0 = 1.0,), (k_off_0s = 1e-4, f_1es = 1.0, k_off_0c = 1e-2, f_1ec = 1.0))
+  k_off_bond = CellAdhesion.k_off(model, convert(CellAdhesionFloat, 2.0))
+  # Force range
+  forces = 0.0:0.1:5.0
+  # Compute bond lifetimes (inverse of k_off)
+  lifetimes = [CellAdhesion.k_off(model, CellAdhesionFloat(f))^-1
+              for f in forces]
+  # Plot
+  p = plot(forces, lifetimes, xlabel = "Force", ylabel = "Bond lifetime", label = "Catch bond", lw = 2)
+  savefig(p, "catchbond.png")
+
+  k_off_bond == (1e-4*exp(2.0/1)+1e-2*exp(-2.0/1))
+
+end
+
+_check_k_off_CatchBond(tol)
 
 
 

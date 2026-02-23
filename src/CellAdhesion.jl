@@ -10,7 +10,8 @@ export CellAdhesionFloat, CellAdhesionInt
 
 using Plots
 
-export Bond, Cluster, SlipBondModel
+export Bond, Cluster
+export SlipBondModel, CatchBondModel
 
 
 include("definitions.jl")
