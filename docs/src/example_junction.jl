@@ -17,7 +17,7 @@ using Statistics
 model = SlipBondModel((k_on_0=3e-3,), (k_off_0=3e-4, f_1e=0.055))
 
 # Define the Cluster data structure parameters
-N = 20;      # Number of bonds
+N = 25;      # Number of bonds
 l = 1.0;     # Distance between bonds
 
 # Define the range of constant forces to be applied
@@ -130,11 +130,11 @@ plot!(p1,p2)
 model = CatchBondModel((k_on_0 = 0.5,), (k_off_0s = 1e-4, f_1es = 1.0, k_off_0c = 1e-2, f_1ec = 1.0))
 
 # Define the Cluster data structure parameters
-N = 25;      # Number of bonds
+N = 20;      # Number of bonds
 l = 1.0;     # Distance between bonds
 
 # Define the range of constant forces to be applied
-F = collect(95.0:110.0);
+F = collect(105.0:120.0);
 
 # Run the Montecarlo simulations for different level of forces, 50 times each
 n = 10;            # Number of simulations
