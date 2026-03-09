@@ -175,7 +175,7 @@ end
 @test _check_cluster()
 
 
-function _check_cluster()
+function _check_cluster_v2()
 
   #n = convert(Vector{CellAdhesionInt}, [2,5])
   n = [2,5]
@@ -204,7 +204,7 @@ function _check_cluster()
 
 end
 
-@test _check_cluster()
+@test _check_cluster_v2()
 
 function _check_runcluster(tol)
 
