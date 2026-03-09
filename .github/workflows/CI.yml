@@ -54,9 +54,12 @@ jobs:
         run: julia --project=@. -e 'using Pkg; Pkg.instantiate();'
         
       - name: Run tests
-        run: julia --project=@. -e 'using Pkg; Pkg.test(coverage=true)'
+        run: julia --project=@. -e 'using Pkg, Coverage; Pkg.test(coverage=true); Coverage.write_cobertura("coverage.xml")'
         
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
+          fail_ci_if_error: true
         env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}
+          CODECOV_TOKEN: ${{ secrets.CODECOV_ORG_TOKEN }}         
