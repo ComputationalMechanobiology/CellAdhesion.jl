@@ -54,7 +54,7 @@ jobs:
         run: julia --project=@. -e 'using Pkg; Pkg.instantiate();'
         
       - name: Run tests
-        run: julia --project=@. -e 'using Pkg; Pkg.add("Coverage"); using Coverage; cov = process_folder(); Coverage.Cobertura.write("coverage.xml", cov)'
+        run: julia --project=@. -e 'using Pkg; Pkg.add("Coverage"); using Coverage; cov = process_folder(); Coverage.write_cobertura("coverage.xml", cov)'
         
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v5
