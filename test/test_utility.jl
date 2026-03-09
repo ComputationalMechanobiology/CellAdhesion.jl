@@ -110,10 +110,10 @@ end
 @testset "Plot cluster (smoke test)" begin
     model = SlipBondModel((k_on_0=0.2,), (k_off_0=0.8, f_1e=1))
     n = 5
-    l = 1.0
+    l = convert(CellAdhesionFloat, 1.0)
     force_sym = :force_global
 
-    cluster = Cluster([Bond(true,0.0,model) for i in 1:n], true, 0.0, force_sym, n, l)
+    cluster = Cluster([Bond(true,convert(CellAdhesionFloat, 0.0),model) for i in 1:n], true, convert(CellAdhesionFloat, 0.0), force_sym, convert(CellAdhesionInt, n), l)
     p = plot()
     @test try
         plot_cluster(cluster, p, 0.0, 1.0)
