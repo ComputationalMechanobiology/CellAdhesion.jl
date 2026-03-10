@@ -48,14 +48,6 @@ function setforce!(v::Cluster{Bond{T}}) where T <:BondModel
 end
 
 
-function setforce!(v::Cluster, F::CellAdhesionFloat)
-
-  setfield!(v, :f, F)
-  setforce!(v)
-
-end
-
-
 function setforce!(v::Cluster)
 
   #if v.state == true
@@ -72,6 +64,16 @@ function setforce!(v::Cluster)
 end
 
 
+function setforce!(v::Cluster, F::CellAdhesionFloat)
+
+  setfield!(v, :f, F)
+  setforce!(v)
+
+end
+
+
+
+
 function distributeforce!(v::Cluster)
 
   #@assert v.f>=0 "Applied stress to Cluster must be positive or equal to zero"
@@ -80,7 +82,7 @@ function distributeforce!(v::Cluster)
     setfield!(v.u[i], :f, update_f[i])
   end
 
-  return update_f
+  # return update_f
 end
 
 
@@ -93,7 +95,7 @@ function force_global(v::Cluster)
 
   interface_v = getfield.(v.u, :state);
   if sum(interface_v) == 0
-  	return interface_v .* convert(CellAdhesionFloat, sum(interface_v))
+  	return interface_v .* convert(CellAdhesionFloat, 0.0)
   else
   	return interface_v .* v.f./sum(interface_v)
   end

@@ -46,7 +46,6 @@ function _check_state()
     model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
     n = convert(CellAdhesionInt, 4)
     l = convert(CellAdhesionFloat, 1.0)
-    F = convert(CellAdhesionFloat, 60.0)
   
     force_string = :force_global
     v1 = Cluster(Bond.([true,false,true, true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
