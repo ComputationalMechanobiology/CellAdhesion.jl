@@ -25,9 +25,7 @@ function state!(v::Cluster)
   clusterstate = false
 
   for i = 1:1:v.n
-    if (clusterstate |= state!(v.u[i]))
-      break
-    end
+    clusterstate |= state!(v.u[i])
   end
 
   # Update the state value of the junction
