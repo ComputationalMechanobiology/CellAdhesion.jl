@@ -25,7 +25,7 @@ function state!(v::Cluster)
   clusterstate = false
 
   for i = 1:1:v.n
-    if (clusterstate |= state!(k))
+    if (clusterstate |= state!(v.u[i]))
       break
     end
   end
