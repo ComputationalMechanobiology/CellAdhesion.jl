@@ -17,31 +17,27 @@ function update!(v::Bond, dt::CellAdhesionFloat)
   v.state ? k = k_off(v.model, v.f) : k = k_on(v.model)
   (k*dt>random) ? (v.state = !(v.state)) : nothing
 
-  
 end
+
 
 function update!(v::Cluster, dt::CellAdhesionFloat)
 
-  #if v.state == true
-
-    for i = 1:1:v.n 
+    for i = 1:1:v.n
       k = v.u[i]
-      update!(k, dt)  
+      update!(k, dt)
     end
 
-    #Get the state value for each bond
-    interface_v = getfield.(v.u, :state);
-
-    # If the sum of the state values is 0, the junction is broken 
-    sum_v = sum(interface_v);
-    state = isequal(sum_v,0);
+    #Get the state value of the cluster
+    clusterstate = false
+    for i = 1:1:v.n
+      clusterstate |= v.u[i].state
+    end
 
     # Update the state value of the junction
-    setfield!(v, :state, !state)
-
-  # end
+    setfield!(v, :state, clusterstate)
 
 end
+
 
 
 """
@@ -105,7 +101,7 @@ function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64; max_steps::
   	 max_steps = n
          print("\n Maximum number of steps = ", max_steps, "\n")
   end
-  
+
 
   step = 1
 
