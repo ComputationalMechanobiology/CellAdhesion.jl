@@ -207,7 +207,7 @@ function Cluster(n::CellAdhesionInt, l::CellAdhesionFloat, model::T, f_model::Sy
   for i = 1:1:n
     u[i] = Bond(model)
   end
-  x = Cluster(u, false, NaN::CellAdhesionFloat, f_model, n, l)
+  x = Cluster(u, false, convert(CellAdhesionFloat,NaN), f_model, n, l)
   
   state!(x)
 
@@ -226,7 +226,7 @@ function Cluster(n::Vector{CellAdhesionInt}, l::Vector{CellAdhesionFloat}, model
       u[i] = Cluster(n[2:end], l[2:end], model, f_model[2:end])
     end
   end
-  x = Cluster(u, false, NaN::CellAdhesionFloat, f_model[1], n[1], l[1])
+  x = Cluster(u, false, convert(CellAdhesionFloat,NaN), f_model[1], n[1], l[1])
 
   state!(x)
 
@@ -262,7 +262,7 @@ function Bond(model::SlipBondModel)
   K = model.k_on[:k_on_0] / (model.k_on[:k_on_0] + model.k_off[:k_off_0])
   v = isless(rand(),K)
 
-  return Bond(v, NaN::CellAdhesionFloat, model)
+  return Bond(v, convert(CellAdhesionFloat,NaN), model)
 
 end
 
@@ -271,7 +271,7 @@ function Bond(model::CatchBondModel)
   K = model.k_on[:k_on_0] / (model.k_on[:k_on_0] + model.k_off[:k_off_0s]+ model.k_off[:k_off_0c])
   v = isless(rand(),K)
 
-  return Bond(v, NaN::CellAdhesionFloat, model)
+  return Bond(v, convert(CellAdhesionFloat,NaN), model)
 
 end
 
