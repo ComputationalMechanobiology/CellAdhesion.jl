@@ -271,7 +271,7 @@ function Bond(model::CatchBondModel)
   K = model.k_on[:k_on_0] / (model.k_on[:k_on_0] + model.k_off[:k_off_0s]+ model.k_off[:k_off_0c])
   v = isless(rand(),K)
 
-  return Bond(v, NaN::CellAdhesionFloat,, model)
+  return Bond(v, NaN::CellAdhesionFloat, model)
 
 end
 
