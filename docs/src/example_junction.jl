@@ -10,7 +10,7 @@ using Statistics
 # ### Example with constant force
 
 # - Define the parameters for the Slip bond model for the junction
-# - Generate a junction made of 20 bonds
+# - Generate a junction made of N bonds
 # - Run the simulations for the junction subjected to a constant force within the range 2-10, 50 times for each level of force
 
 # Define the BondModel to compute the binding-unbinding rate
@@ -23,7 +23,7 @@ l = 1.0;     # Distance between bonds
 # Define the range of constant forces to be applied
 F = [2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0];
 
-# Run the Montecarlo simulations for different level of forces, 50 times each
+# Run the Montecarlo simulations for different level of forces, n times each
 n = 10;            # Number of simulations
 n_f = length(F);    # Number of different forces to apply to the junction
 
@@ -69,7 +69,7 @@ ylabel!("Time (s)")
 rates = [0.005, 0.01, 0.02, 0.03]
 k = 1   # Spring stiffness
 
-# Run the Montecarlo simulations for different ramps, 50 times each
+# Run the Montecarlo simulations for different ramps, n times each
 n = 20;            # Number of simulations
 n_f = length(rates);    # Number of different forces to apply to the junction
 
@@ -136,7 +136,7 @@ l = 1.0;     # Distance between bonds
 # Define the range of constant forces to be applied
 F = collect(105.0:120.0);
 
-# Run the Montecarlo simulations for different level of forces, 50 times each
+# Run the Montecarlo simulations for different level of forces, n times each
 n = 10;            # Number of simulations
 n_f = length(F);    # Number of different forces to apply to the junction
 
