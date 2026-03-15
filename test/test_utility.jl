@@ -11,7 +11,7 @@ function _check_SlipBondModel()
 
     model = SlipBondModel(k_on_params, k_off_params)
 
-    typeof(model) == SlipBondModel
+    typeof(model) == BondModel{Slip}
 
 end
 
