@@ -192,7 +192,7 @@ function _check_cluster_v2()
 
   (
     (x1.n == 2)
-    && (typeof(x1.u[1].u[1]) == Bond{SlipBondModel})
+    && (typeof(x1.u[1].u[1]) == Bond{BondModel{Slip}})
     && (typeof(x1) == Cluster{Cluster})
     && (typeof(x2) == Cluster{Cluster})
     && (x2.n == 3)
