@@ -16,7 +16,7 @@ Base.propertynames(b::BondModel) = keys(getfield(b,:p))
 
 # k_on should always be a constant. This could be specialised if needed, but what could it depend on?
 function k_on(m::BondModel{T}) where T
-  return m.p.k_on
+  return m.k_on
 end
 
 
