@@ -4,7 +4,14 @@ using Plots
 using Statistics
 
 # find all the files in the data directory
-files = readdir(joinpath(@__DIR__, "example_data"))
+data_dir_candidates = [
+    joinpath(@__DIR__, "example_data"),
+    joinpath(pkgdir(CellAdhesion), "docs", "src", "example_data"),
+]
+data_dir_idx = findfirst(isdir, data_dir_candidates)
+data_dir_idx === nothing && error("Could not locate example_data directory")
+data_dir = data_dir_candidates[data_dir_idx]
+files = readdir(data_dir)
 
 # extract the strain rates from the file names
 strain_rates = [parse(Float64, split(split(file, "_")[end], ".txt")[1]) for file in files]
@@ -35,7 +42,7 @@ p2 = plot()
 p3 = plot()
 for (i, strain_rate) in enumerate(strain_rates)
     ## load the stress-time data from the file
-    data = readdlm(joinpath(@__DIR__, "example_data", files[i]))
+    data = readdlm(joinpath(data_dir, files[i]))
     time = data[2:end, 1]   # ignore the header
     strain = data[2:end, 2]
     stress = data[2:end, 3]
