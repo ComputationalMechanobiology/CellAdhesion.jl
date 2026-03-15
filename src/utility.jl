@@ -1,5 +1,5 @@
 
-export print_cluster, plot_cluster, bond_state_force
+export print_cluster, plot_cluster, bond_state_force, plot_force_distribution
 
 
 """
@@ -163,8 +163,7 @@ end
 # Leaf cluster: bonds stacked along y, colored by tension.
 function plot_force_distribution!(v::Cluster{Bond{T}}, p, x, y = 0.0; cmap = :viridis,
                        show_colorbar::Bool = true) where T <: BondModel
-  states = [bond.state for bond in v.u]
-  forces = [bond.f for bond in v.u]
+  states, forces = bond_state_force(v)
   y_coords = y .+ (0:(v.n - 1)) .* v.l
   closed     = findall(states)
   open_bonds = findall(.!states)

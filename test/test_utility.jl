@@ -155,8 +155,8 @@ function _check_plot_force_distribution()
     )
 
     p = plot()
-    p = CellAdhesion.plot_force_distribution(cluster, p, 1.0, 0.0, :viridis)
-    savefig(p, "test_plot_force_distribution.png")
+    p = plot_force_distribution(cluster, p, 1.0, 0.0, :viridis)
+    savefig(p, "plot_force_distribution.png")
     1==1
 end
 
