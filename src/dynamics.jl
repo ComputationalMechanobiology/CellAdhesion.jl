@@ -77,7 +77,7 @@ function resolve_force_dist_function(sym::Symbol)
         return getfield(Main, sym)
     end
     if isdefined(CellAdhesion, sym)
-        return getfield(mod, sym)
+        return getfield(CellAdhesion, sym)
     end
     error("Function $sym not found")
 end
