@@ -256,7 +256,7 @@ end
 
 function Bond(model::BondModel{T}) where T
   # set state randomly based on the equilibrium binding probability at 0 force.
-  v = isless(rand(),k_on(m) / (k_on(m)+k_off(m,0.)))
+  v = isless(rand(),k_on(model) / (k_on(model)+k_off(model,0.)))
   return Bond(v, convert(CellAdhesionFloat,NaN), model)
 end
 
