@@ -71,13 +71,22 @@ function setforce!(v::Cluster, F::CellAdhesionFloat)
 
 end
 
-
+function resolve_force_dist_function(sym::Symbol)
+    # Look for the force distribution function in user space first, or use library defined version otherwise.
+    if isdefined(Main, sym)
+        return getfield(Main, sym)
+    end
+    if isdefined(CellAdhesion, sym)
+        return getfield(mod, sym)
+    end
+    error("Function $sym not found")
+end
 
 
 function distributeforce!(v::Cluster)
 
   #@assert v.f>=0 "Applied stress to Cluster must be positive or equal to zero"
-  update_f = getfield(CellAdhesion, v.f_model)(v)      # If we define v.f_model as string then => Symbol(v.f_model)
+  update_f = resolve_force_dist_function(v.f_model)(v)      # If we define v.f_model as string then => Symbol(v.f_model)
   for i = 1:1:v.n
     setfield!(v.u[i], :f, update_f[i])
   end

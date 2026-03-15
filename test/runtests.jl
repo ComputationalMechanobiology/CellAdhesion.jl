@@ -13,6 +13,7 @@ println("===============================================")
 println("\n")
 
 
+include("test_bondmodels.jl")
 include("test_utility.jl")
 include("test_dynamics.jl")
 include("test_processing.jl")
