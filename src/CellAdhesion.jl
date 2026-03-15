@@ -11,6 +11,7 @@ export CellAdhesionFloat, CellAdhesionInt
 using Plots
 
 export Bond, Cluster
+export BondModel, BondType, Slip, Catch
 export SlipBondModel, CatchBondModel
 
 include("bondmodels.jl")
