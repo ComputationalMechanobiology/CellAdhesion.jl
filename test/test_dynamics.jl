@@ -65,13 +65,13 @@ _check_k_off_CatchBond(tol)
 
 
 function _check_resolve_force_dist_function()
-  (resolve_force_dist_function(:sin) == Main.sin) && (resolve_force_dist_function(:force_local) == CellAdhesion.force_local)
+  (CellAdhesion.resolve_force_dist_function(:sin) == Main.sin) && (CellAdhesion.resolve_force_dist_function(:force_local) == CellAdhesion.force_local)
 end
 
 @test _check_resolve_force_dist_function()
 
 
-@test_throws "Function my_unlikely_function_name_for_testing not found" resolve_force_dist_function(:my_unlikely_function_name_for_testing)
+@test_throws "Function my_unlikely_function_name_for_testing not found" CellAdhesion.resolve_force_dist_function(:my_unlikely_function_name_for_testing)
 
 
 
