@@ -44,6 +44,7 @@ function notebookprepare()
 
     # copy assets to notebooks staging directory
     cp("docs/src/assets", "docs/staging-docs/notebooks/assets")
+    cp("docs/src/example_data", "docs/staging-docs/notebooks/example_data")
 
     for file in readdir("docs/src")
         if endswith(file, "jl")
