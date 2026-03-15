@@ -140,6 +140,30 @@ end
 
 
 
+function _check_plot_force_distribution()
+
+    model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1.0))
+    force_string = :force_global
+
+    cluster = Cluster(
+        Bond.([true, false, true,true, false, true,true, false, true], convert(Vector{CellAdhesionFloat}, [1.0, 2.0, 3.0,1.0, 2.0, 3.0,1.0, 2.0, 3.0]), repeat([model], 9)),
+        true,
+        convert(CellAdhesionFloat, 0.0),
+        force_string,
+        convert(CellAdhesionInt, 9),
+        convert(CellAdhesionFloat, 1.0),
+    )
+
+    p = plot()
+    p = CellAdhesion.plot_force_distribution(cluster, p, 1.0, 0.0, :viridis)
+    savefig(p, "test_plot_force_distribution.png")
+    1==1
+end
+
+@test _check_plot_force_distribution()
+
+
+
 
 function _check_plot()
     model1 = SlipBondModel((k_on_0=0.2,), (k_off_0=0.8, f_1e=1))
