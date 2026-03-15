@@ -44,7 +44,7 @@ function CatchBondModel(k_on::NamedTuple, k_off::NamedTuple)
 end
 
 
-# # How to define the bond model
+# # How to set the parameters of a bond model (here slip bond)
 
 # m=BondModel{Slip}(k_on=1, k_off_0=2, f_0=3)
 
@@ -54,5 +54,5 @@ end
 # struct MyBond <: BondType end
 
 # function k_off(m::BondModel{MyBond}, f)
-#   return m.p.k_off_0 .* sinh.(f ./ m.p.f_1e)
+#   return m.k_off_0 .* sinh.(f ./ m.f_1e)
 # end
