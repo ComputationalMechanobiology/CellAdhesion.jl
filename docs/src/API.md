@@ -18,6 +18,7 @@ runcluster
 ## Utility functions
 ```@docs
 CellAdhesion.state!
+CellAdhesion.bond_state_force
 print_cluster
 ```
 
