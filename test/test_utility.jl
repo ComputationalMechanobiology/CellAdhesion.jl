@@ -157,6 +157,19 @@ function _check_plot_force_distribution()
     p = plot()
     p = plot_force_distribution(cluster, p, 1.0, 0.0, :viridis)
     savefig(p, "plot_force_distribution.png")
+
+    cluster_of_clusters = Cluster(
+        [cluster, cluster],
+        true,
+        convert(CellAdhesionFloat, 0.0),
+        force_string,
+        convert(CellAdhesionInt, 2),
+        convert(CellAdhesionFloat, 1.0),
+    )
+    p2 = plot()
+    p2 = plot_force_distribution(cluster_of_clusters, p2, 1.0, 0.0, :viridis)
+    savefig(p2, "plot_force_distribution_cluster_of_clusters.png")
+
     1==1
 end
 
