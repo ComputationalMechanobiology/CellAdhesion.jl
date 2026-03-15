@@ -4,20 +4,6 @@ println("Testing utility.jl")
 println("===============================================")
 
 
-function _check_SlipBondModel()
-
-    k_on_params = (k_on_0 = 0.2,)
-    k_off_params = (k_off_0 = 0.8, f_1e = 1.0)
-
-    model = SlipBondModel(k_on_params, k_off_params)
-
-    typeof(model) == SlipBondModel
-
-end
-
-@test _check_SlipBondModel()
-
-
 
 function _check_print()
     model1 = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))

@@ -2,23 +2,23 @@ export setforce!
 
 #------------------ K_ON AND K_OFF FUNCTIONS FOR DIFFERENT STOCHASTIC MODELS -------------------------------------
 
-function k_on(m::Union{SlipBondModel, CatchBondModel})
+# function k_on(m::Union{SlipBondModel, CatchBondModel})
 
-  return m.k_on[:k_on_0]
+#   return m.k_on[:k_on_0]
 
-end
+# end
 
-function k_off(m::SlipBondModel, f::CellAdhesionFloat)
+# function k_off(m::SlipBondModel, f::CellAdhesionFloat)
   
-  return m.k_off[:k_off_0] .* exp.(f ./ m.k_off[:f_1e])
+#   return m.k_off[:k_off_0] .* exp.(f ./ m.k_off[:f_1e])
 
-end
+# end
 
-function k_off(m::CatchBondModel, f::CellAdhesionFloat)
+# function k_off(m::CatchBondModel, f::CellAdhesionFloat)
   
-  return m.k_off[:k_off_0s] .* exp.(f ./ m.k_off[:f_1es]) + m.k_off[:k_off_0c] .* exp.(-f ./ m.k_off[:f_1ec])
+#   return m.k_off[:k_off_0s] .* exp.(f ./ m.k_off[:f_1es]) + m.k_off[:k_off_0c] .* exp.(-f ./ m.k_off[:f_1ec])
 
-end
+# end
 
 
 #------------------ SET FORCE WITHIN CLUSTER STRUCTURES -------------------------------------
@@ -71,13 +71,22 @@ function setforce!(v::Cluster, F::CellAdhesionFloat)
 
 end
 
-
+function resolve_force_dist_function(sym::Symbol)
+    # Look for the force distribution function in user space first, or use library defined version otherwise.
+    if isdefined(Main, sym)
+        return getfield(Main, sym)
+    end
+    if isdefined(CellAdhesion, sym)
+        return getfield(CellAdhesion, sym)
+    end
+    error("Function $sym not found")
+end
 
 
 function distributeforce!(v::Cluster)
 
   #@assert v.f>=0 "Applied stress to Cluster must be positive or equal to zero"
-  update_f = getfield(CellAdhesion, v.f_model)(v)      # If we define v.f_model as string then => Symbol(v.f_model)
+  update_f = resolve_force_dist_function(v.f_model)(v)      # If we define v.f_model as string then => Symbol(v.f_model)
   for i = 1:1:v.n
     setfield!(v.u[i], :f, update_f[i])
   end

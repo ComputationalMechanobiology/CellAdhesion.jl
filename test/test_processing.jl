@@ -149,7 +149,7 @@ function _check_bond()
   model2 = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
   x2 = Bond(model2)
 
-  ((x1.state == false) && (x2.state == true) &&  typeof(x1) == Bond{SlipBondModel})
+  ((x1.state == false) && (x2.state == true) &&  typeof(x1) == Bond{BondModel{Slip}})
 
 end
 @test _check_bond()
@@ -192,7 +192,7 @@ function _check_cluster_v2()
 
   (
     (x1.n == 2)
-    && (typeof(x1.u[1].u[1]) == Bond{SlipBondModel})
+    && (typeof(x1.u[1].u[1]) == Bond{BondModel{Slip}})
     && (typeof(x1) == Cluster{Cluster})
     && (typeof(x2) == Cluster{Cluster})
     && (x2.n == 3)

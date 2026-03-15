@@ -253,23 +253,31 @@ end
 
 
 
-function Bond(model::SlipBondModel)
 
-  K = model.k_on[:k_on_0] / (model.k_on[:k_on_0] + model.k_off[:k_off_0])
-  v = isless(rand(),K)
-
+function Bond(model::BondModel{T}) where T
+  # set state randomly based on the equilibrium binding probability at 0 force.
+  v = isless(rand(),k_on(model) / (k_on(model)+k_off(model,0.)))
   return Bond(v, convert(CellAdhesionFloat,NaN), model)
-
 end
 
-function Bond(model::CatchBondModel)
 
-  K = model.k_on[:k_on_0] / (model.k_on[:k_on_0] + model.k_off[:k_off_0s]+ model.k_off[:k_off_0c])
-  v = isless(rand(),K)
+# function Bond(model::SlipBondModel)
 
-  return Bond(v, convert(CellAdhesionFloat,NaN), model)
+#   K = model.k_on[:k_on_0] / (model.k_on[:k_on_0] + model.k_off[:k_off_0])
+#   v = isless(rand(),K)
 
-end
+#   return Bond(v, convert(CellAdhesionFloat,NaN), model)
+
+# end
+
+# function Bond(model::CatchBondModel)
+
+#   K = model.k_on[:k_on_0] / (model.k_on[:k_on_0] + model.k_off[:k_off_0s]+ model.k_off[:k_off_0c])
+#   v = isless(rand(),K)
+
+#   return Bond(v, convert(CellAdhesionFloat,NaN), model)
+
+# end
 
 
 
