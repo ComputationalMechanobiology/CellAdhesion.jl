@@ -149,7 +149,7 @@ function _check_bond()
   model2 = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
   x2 = Bond(model2)
 
-  ((x1.state == false) && (x2.state == true) &&  typeof(x1) == Bond{SlipBondModel})
+  ((x1.state == false) && (x2.state == true) &&  typeof(x1) == Bond{BondModel{Slip}})
 
 end
 @test _check_bond()
