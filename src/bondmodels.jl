@@ -6,7 +6,7 @@ struct BondModel{T}
 end
 
 # Allow accessing parameters directly via dot syntax
-Base.getproperty(b::BondModel, s::Symbol) = 
+Base.getproperty(b::BondModel, s::Symbol) =
     getproperty(getfield(b, :p), s)
 
 # Provide tab-completion and reflection of available properties
