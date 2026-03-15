@@ -10,7 +10,7 @@ Base.getproperty(b::BondModel, s::Symbol) =
     getproperty(getfield(b, :p), s)
 
 # Provide tab-completion and reflection of available properties
-Base.propertynames(b::BondModel) = (keys(getfield(b,:p))...)
+Base.propertynames(b::BondModel) = keys(getfield(b,:p))
 
 
 
