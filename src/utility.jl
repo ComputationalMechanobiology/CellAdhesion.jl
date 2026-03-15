@@ -1,5 +1,5 @@
 
-export print_cluster, plot_cluster
+export print_cluster, plot_cluster, bond_state_force
 
 
 """
@@ -111,3 +111,43 @@ function plot_cluster(v::Cluster, p, x)
   end
 end 
 
+
+
+
+"""
+  bond_state_force(v)
+
+  Return vectors of bond states and bond forces for a `Bond`, a Bond Cluster  or nested `Cluster`.
+  Closed bonds are assigned `NaN` in the force output.
+
+"""
+function bond_state_force(v::Bond)
+  states = Bool[v.state]
+  forces = CellAdhesionFloat[v.state ? v.f : convert(CellAdhesionFloat, NaN)]
+  return states, forces
+
+end
+
+function bond_state_force(v::Cluster{Bond{T}}) where T <: BondModel
+  states = getfield.(v.u, :state)
+  forces = getfield.(v.u, :f)
+  nan_value = convert(CellAdhesionFloat, NaN)
+
+  force_out = Vector{CellAdhesionFloat}(undef, v.n)
+  for i = 1:1:v.n
+    force_out[i] = states[i] ? forces[i] : nan_value
+  end
+  return states, force_out
+end
+
+
+function bond_state_force(v::Cluster)
+  states = Bool[]
+  forces = CellAdhesionFloat[]
+  for i = 1:1:v.n
+    sub_states, sub_forces = bond_state_force(v.u[i])
+    append!(states, sub_states)
+    append!(forces, sub_forces)
+  end
+  return states, forces
+end
