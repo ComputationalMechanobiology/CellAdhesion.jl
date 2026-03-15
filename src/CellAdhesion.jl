@@ -13,6 +13,7 @@ using Plots
 export Bond, Cluster
 export SlipBondModel, CatchBondModel
 
+include("bondmodels.jl")
 
 include("definitions.jl")
 include("utility.jl")

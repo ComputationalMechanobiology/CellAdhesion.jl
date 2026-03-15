@@ -2,23 +2,23 @@ export setforce!
 
 #------------------ K_ON AND K_OFF FUNCTIONS FOR DIFFERENT STOCHASTIC MODELS -------------------------------------
 
-function k_on(m::Union{SlipBondModel, CatchBondModel})
+# function k_on(m::Union{SlipBondModel, CatchBondModel})
 
-  return m.k_on[:k_on_0]
+#   return m.k_on[:k_on_0]
 
-end
+# end
 
-function k_off(m::SlipBondModel, f::CellAdhesionFloat)
+# function k_off(m::SlipBondModel, f::CellAdhesionFloat)
   
-  return m.k_off[:k_off_0] .* exp.(f ./ m.k_off[:f_1e])
+#   return m.k_off[:k_off_0] .* exp.(f ./ m.k_off[:f_1e])
 
-end
+# end
 
-function k_off(m::CatchBondModel, f::CellAdhesionFloat)
+# function k_off(m::CatchBondModel, f::CellAdhesionFloat)
   
-  return m.k_off[:k_off_0s] .* exp.(f ./ m.k_off[:f_1es]) + m.k_off[:k_off_0c] .* exp.(-f ./ m.k_off[:f_1ec])
+#   return m.k_off[:k_off_0s] .* exp.(f ./ m.k_off[:f_1es]) + m.k_off[:k_off_0c] .* exp.(-f ./ m.k_off[:f_1ec])
 
-end
+# end
 
 
 #------------------ SET FORCE WITHIN CLUSTER STRUCTURES -------------------------------------

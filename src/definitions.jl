@@ -19,7 +19,7 @@ mutable struct Bond{T}
     model::T                          # BondModel data type (we do not use pointers -> will see later if necessary) 
 end
 
-
+# 
 """
     Cluster(u::Vector{Bond,Cluster}, state::{Bool}, f::{CellAdhesionFloat}, f_model::{Symbol}, n::{CellAdhesionInt}, l::{CellAdhesionFloat})
 
@@ -34,36 +34,36 @@ mutable struct Cluster{T}
 end
 
 
-abstract type BondModel end
+# abstract type BondModel end
 
-struct SlipBondModel <: BondModel
-    k_on::NamedTuple
-    k_off::NamedTuple
+# struct SlipBondModel <: BondModel
+#     k_on::NamedTuple
+#     k_off::NamedTuple
 
-    function SlipBondModel(k_on::NamedTuple, k_off::NamedTuple)
-        k_on_0 = convert(CellAdhesionFloat, k_on[:k_on_0])
-        k_off_0 = convert(CellAdhesionFloat, k_off[:k_off_0])
-        f_1e = convert(CellAdhesionFloat, k_off[:f_1e])
-        new((k_on_0 = k_on_0,), (k_off_0 = k_off_0, f_1e = f_1e))
-    end
+#     function SlipBondModel(k_on::NamedTuple, k_off::NamedTuple)
+#         k_on_0 = convert(CellAdhesionFloat, k_on[:k_on_0])
+#         k_off_0 = convert(CellAdhesionFloat, k_off[:k_off_0])
+#         f_1e = convert(CellAdhesionFloat, k_off[:f_1e])
+#         new((k_on_0 = k_on_0,), (k_off_0 = k_off_0, f_1e = f_1e))
+#     end
 
-end
+# end
 
 
-struct CatchBondModel <: BondModel
-    k_on::NamedTuple
-    k_off::NamedTuple
+# struct CatchBondModel <: BondModel
+#     k_on::NamedTuple
+#     k_off::NamedTuple
 
-    function CatchBondModel(k_on::NamedTuple, k_off::NamedTuple)
-        k_on_0 = convert(CellAdhesionFloat, k_on[:k_on_0])
-        k_off_0s = convert(CellAdhesionFloat, k_off[:k_off_0s])
-        f_1es = convert(CellAdhesionFloat, k_off[:f_1es])
-        k_off_0c = convert(CellAdhesionFloat, k_off[:k_off_0c])
-        f_1ec = convert(CellAdhesionFloat, k_off[:f_1ec])
-        new((k_on_0 = k_on_0,), (k_off_0s = k_off_0s, f_1es = f_1es, k_off_0c = k_off_0c, f_1ec = f_1ec))
-    end
+#     function CatchBondModel(k_on::NamedTuple, k_off::NamedTuple)
+#         k_on_0 = convert(CellAdhesionFloat, k_on[:k_on_0])
+#         k_off_0s = convert(CellAdhesionFloat, k_off[:k_off_0s])
+#         f_1es = convert(CellAdhesionFloat, k_off[:f_1es])
+#         k_off_0c = convert(CellAdhesionFloat, k_off[:k_off_0c])
+#         f_1ec = convert(CellAdhesionFloat, k_off[:f_1ec])
+#         new((k_on_0 = k_on_0,), (k_off_0s = k_off_0s, f_1es = f_1es, k_off_0c = k_off_0c, f_1ec = f_1ec))
+#     end
 
-end
+# end
 
 # Interface = Cluster{Cluster}
 
