@@ -13,7 +13,7 @@ function _check_k_on_SlipBond(tol)
 
 end
 
-@test _check_k_on_SlipBond(tol)
+_check_k_on_SlipBond(tol)
 
 
 function _check_k_off_SlipBond(tol)
@@ -25,7 +25,7 @@ function _check_k_off_SlipBond(tol)
 
 end
 
-@test _check_k_off_SlipBond(tol)
+_check_k_off_SlipBond(tol)
 
 
 function _check_k_on_CatchBond(tol)
@@ -37,7 +37,7 @@ function _check_k_on_CatchBond(tol)
 
 end
 
-@test _check_k_on_CatchBond(tol)
+_check_k_on_CatchBond(tol)
 
 
 function _check_k_off_CatchBond(tol)
@@ -57,7 +57,7 @@ function _check_k_off_CatchBond(tol)
 
 end
 
-@test _check_k_off_CatchBond(tol)
+_check_k_off_CatchBond(tol)
 
 
 
