@@ -37,7 +37,7 @@ end
 
 
 function SlipBondModel(k_on::NamedTuple, k_off::NamedTuple)
-  return(BondModel{Slip}(k_on=k_on.k_on_0, k_off_0=k_off.k_off_0, f_0=k_off.f_0))
+  return(BondModel{Slip}(k_on=k_on.k_on_0, k_off_0=k_off.k_off_0, f_1e=k_off.f_1e))
 end
 function CatchBondModel(k_on::NamedTuple, k_off::NamedTuple)
   return(BondModel{Catch}(k_on=k_on.k_on_0, k_off_0s=k_off.k_off_0s, f_1es=k_off.f_1es, k_off_0c=k_off.k_off_0c, f_1ec=k_off.f_1ec))
