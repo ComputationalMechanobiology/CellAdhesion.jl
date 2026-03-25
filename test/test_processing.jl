@@ -274,3 +274,113 @@ function _check_runcluster_statecheck(tol)
 end
 
 @test _check_runcluster_statecheck(tol)
+
+
+function _check_bond_state_force()
+
+    model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+    force_string = :force_global
+
+    closed_bond = Bond(true, convert(CellAdhesionFloat, 2.5), model)
+    open_bond = Bond(false, convert(CellAdhesionFloat, 7.5), model)
+
+    bond_states_closed, bond_forces_closed = bond_state_force(closed_bond)
+    bond_states_open, bond_forces_open = bond_state_force(open_bond)
+
+    flat_cluster = Cluster(
+        Bond.([true, false, true], convert(Vector{CellAdhesionFloat}, [1.0, 2.0, 3.0]), repeat([model], 3)),
+        true,
+        convert(CellAdhesionFloat, 0.0),
+        force_string,
+        convert(CellAdhesionInt, 3),
+        convert(CellAdhesionFloat, 1.0),
+    )
+
+    nested_cluster = Cluster(
+        [
+            flat_cluster,
+            Cluster(
+                Bond.([false, true], convert(Vector{CellAdhesionFloat}, [4.0, 5.0]), repeat([model], 2)),
+                true,
+                convert(CellAdhesionFloat, 0.0),
+                force_string,
+                convert(CellAdhesionInt, 2),
+                convert(CellAdhesionFloat, 1.0),
+            ),
+        ],
+        true,
+        convert(CellAdhesionFloat, 0.0),
+        force_string,
+        convert(CellAdhesionInt, 2),
+        convert(CellAdhesionFloat, 1.0),
+    )
+
+    flat_states, flat_forces = bond_state_force(flat_cluster)
+    nested_states, nested_forces = bond_state_force(nested_cluster)
+
+    expected_flat_states = Bool[true, false, true]
+    expected_flat_forces = convert(Vector{CellAdhesionFloat}, [1.0, NaN, 3.0])
+    expected_nested_states = Bool[true, false, true, false, true]
+    expected_nested_forces = convert(Vector{CellAdhesionFloat}, [1.0, NaN, 3.0, NaN, 5.0])
+
+    ((bond_states_closed == Bool[true])
+     && (bond_forces_closed == convert(Vector{CellAdhesionFloat}, [2.5]))
+     && (bond_states_open == Bool[false])
+     && (length(bond_forces_open) == 1)
+     && isnan(bond_forces_open[1])
+     && (flat_states == expected_flat_states)
+     && all(isequal.(flat_forces, expected_flat_forces))
+     && (nested_states == expected_nested_states)
+     && all(isequal.(nested_forces, expected_nested_forces)))
+
+end
+
+@test _check_bond_state_force()
+
+function _check_bond_state_force_nested()
+    model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+    force_string = :force_global
+
+    flat_cluster = Cluster(
+        Bond.([true, false, true], convert(Vector{CellAdhesionFloat}, [1.0, 2.0, 3.0]), repeat([model], 3)),
+        true,
+        convert(CellAdhesionFloat, 0.0),
+        force_string,
+        convert(CellAdhesionInt, 3),
+        convert(CellAdhesionFloat, 1.0),
+    )
+
+    nested_cluster = Cluster(
+        [
+            flat_cluster,
+            Cluster(
+                Bond.([false, true], convert(Vector{CellAdhesionFloat}, [4.0, 5.0]), repeat([model], 2)),
+                true,
+                convert(CellAdhesionFloat, 0.0),
+                force_string,
+                convert(CellAdhesionInt, 2),
+                convert(CellAdhesionFloat, 1.0),
+            ),
+        ],
+        true,
+        convert(CellAdhesionFloat, 0.0),
+        force_string,
+        convert(CellAdhesionInt, 2),
+        convert(CellAdhesionFloat, 1.0),
+    )
+
+    flat_nested = bond_state_force(flat_cluster; output = :nested, time = 0.5)
+    nested_nested = bond_state_force(nested_cluster; output = :nested, time = 1.3)
+
+    @test flat_nested["time"] == 0.5
+    @test flat_nested["states"] == Bool[true, false, true]
+    @test all(isequal.(flat_nested["force"], convert(Vector{CellAdhesionFloat}, [1.0, NaN, 3.0])))
+
+    @test nested_nested["time"] == 1.3
+    @test nested_nested["states"] == [Bool[true, false, true], Bool[false, true]]
+    @test all(isequal.(nested_nested["force"][1], convert(Vector{CellAdhesionFloat}, [1.0, NaN, 3.0])))
+    @test all(isequal.(nested_nested["force"][2], convert(Vector{CellAdhesionFloat}, [NaN, 5.0])))
+    return true
+end
+
+@test _check_bond_state_force_nested()

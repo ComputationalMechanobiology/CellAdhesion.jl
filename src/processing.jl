@@ -1,4 +1,4 @@
-export update!, runcluster, Cluster, Bond
+export update!, runcluster, Cluster, Bond, bond_state_force
 
 
 """
@@ -274,6 +274,93 @@ function Bond(model::CatchBondModel)
   return Bond(v, convert(CellAdhesionFloat, 0.0), model)
 
 end
+
+
+
+
+"""
+  bond_state_force(v; output=:flat, time=missing)
+
+  Return bond state/force information for a `Bond`, a `Cluster{Bond}`, or nested `Cluster`.
+
+  - output=:flat (default) returns tuples (states, forces) identical to previous API.
+  - output=:nested returns a Dict with keys "time", "states", "force", preserving hierarchy:
+      * Bond -> Bool and scalar float
+      * Cluster{Bond} -> Vector of Bool / Float
+      * nested Cluster -> nested Vector structures
+
+  Closed bonds are assigned `NaN` in force output.
+"""
+function bond_state_force(v::Bond; output::Symbol = :flat, time::Union{Missing,Real} = missing)
+  state = v.state
+  force = state ? v.f : convert(CellAdhesionFloat, NaN)
+
+  if output == :flat
+    return Bool[state], CellAdhesionFloat[force]
+  elseif output == :nested
+    return Dict(
+      "time" => time,
+      "states" => state,
+      "force" => force,
+    )
+  else
+    throw(ArgumentError("output must be :flat or :nested"))
+  end
+end
+
+function bond_state_force(v::Cluster{Bond{T}}; output::Symbol = :flat, time::Union{Missing,Real} = missing) where T <: BondModel
+  states = getfield.(v.u, :state)
+  forces = getfield.(v.u, :f)
+  nan_value = convert(CellAdhesionFloat, NaN)
+
+  force_out = Vector{CellAdhesionFloat}(undef, v.n)
+  for i = 1:v.n
+    force_out[i] = states[i] ? forces[i] : nan_value
+  end
+
+  if output == :flat
+    return states, force_out
+  elseif output == :nested
+    return Dict(
+      "time" => time,
+      "states" => states,
+      "force" => force_out,
+    )
+  else
+    throw(ArgumentError("output must be :flat or :nested"))
+  end
+end
+
+function bond_state_force(v::Cluster; output::Symbol = :flat, time::Union{Missing,Real} = missing)
+  if output == :flat
+    states = Bool[]
+    forces = CellAdhesionFloat[]
+    for i = 1:v.n
+      sub_states, sub_forces = bond_state_force(v.u[i]; output = :flat)
+      append!(states, sub_states)
+      append!(forces, sub_forces)
+    end
+    return states, forces
+  elseif output == :nested
+    nested_states = Vector{Any}(undef, v.n)
+    nested_forces = Vector{Any}(undef, v.n)
+    for i = 1:v.n
+      sub = bond_state_force(v.u[i]; output = :nested, time = time)
+      nested_states[i] = sub["states"]
+      nested_forces[i] = sub["force"]
+    end
+    return Dict(
+      "time" => time,
+      "states" => nested_states,
+      "force" => nested_forces,
+    )
+  else
+    throw(ArgumentError("output must be :flat or :nested"))
+  end
+end
+
+
+# 
 
 
 
