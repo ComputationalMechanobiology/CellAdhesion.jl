@@ -1,4 +1,4 @@
-export update!, runcluster, Cluster, Bond, bond_state_force
+export update!, runcluster, Cluster, Bond, bond_state_force, save_cluster_state
 
 
 """
@@ -360,7 +360,91 @@ function bond_state_force(v::Cluster; output::Symbol = :flat, time::Union{Missin
 end
 
 
-# 
 
+"""
+  save_cluster_state(v, file_name; output=:nested, time=missing)
+  save_cluster_state(states, file_name)
+
+Save cluster bond state/force information to a JSON file.
+
+First method:
+- Input: `v::Cluster`, `file_name::String`.
+- Optional kwargs: `output::Symbol` (default `:nested`), `time::Union{Missing,Real}` (default `missing`).
+- Uses `bond_state_force(v; output=output, time=time)` to build a state dictionary, then writes it as JSON.
+
+Second method:
+- Input: `states::Vector{<:AbstractDict}`, `file_name::String`.
+- Writes a vector of already-obtained bond state dictionaries to JSON.
+
+Also supported helper overload:
+- `save_cluster_state(state::Dict, file_name::String)`.
+
+JSON encoding handles nested arrays/dicts, booleans, numbers, strings, and missing values.
+"""
+
+# JSON utilities for minimal dependency-free serialization
+function _json_escape(str::String)
+    s = replace(str, "\\" => "\\\\")
+    s = replace(s, '"' => "\\\"")
+    s = replace(s, '\n' => "\\n")
+    s = replace(s, '\r' => "\\r")
+    s = replace(s, '\t' => "\\t")
+    return s
+end
+
+function _json_value(x)
+    if x === missing
+        return "null"
+    elseif x isa Bool
+        return x ? "true" : "false"
+    elseif x isa Integer
+        return string(x)
+    elseif x isa AbstractFloat
+        if isnan(x) || isinf(x)
+            return "null"
+        else
+            return string(x)
+        end
+    elseif x isa AbstractString
+        return "\"" * _json_escape(x) * "\""
+    elseif x isa Dict
+        items = String[]
+        for (key, value) in x
+            key_str = "\"" * _json_escape(string(key)) * "\""
+            push!(items, key_str * ": " * _json_value(value))
+        end
+        return "{" * join(items, ", ") * "}"
+    elseif x isa AbstractVector
+        encoded = _json_value.(x)
+        return "[" * join(encoded, ", ") * "]"
+    else
+        throw(ArgumentError("Unsupported data type for JSON serialization: $(typeof(x))"))
+    end
+end
+
+function _json_serialize(state)
+    return _json_value(state)
+end
+
+function _save_json_to_file(obj, file_name::String)
+    open(file_name, "w") do io
+        write(io, _json_serialize(obj))
+    end
+    return file_name
+end
+
+function save_cluster_state(v::Cluster, file_name::String; output::Symbol = :nested, time::Union{Missing,Real} = missing)
+    state = bond_state_force(v; output = output, time = time)
+    _save_json_to_file(state, file_name)
+end
+
+function save_cluster_state(states::Vector{<:AbstractDict}, file_name::String)
+    _save_json_to_file(states, file_name)
+end
+
+# convenience additional overload
+function save_cluster_state(state::Dict, file_name::String)
+    _save_json_to_file(state, file_name)
+end
 
 

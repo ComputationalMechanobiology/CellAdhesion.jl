@@ -383,4 +383,57 @@ function _check_bond_state_force_nested()
     return true
 end
 
+function _check_save_cluster_state()
+    model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+    c = Cluster(3, 1.0, model, :force_global)
+    c.u[1].state = true; c.u[1].f = 2.0
+    c.u[2].state = false; c.u[2].f = 2.0
+    c.u[3].state = true; c.u[3].f = 3.0
+
+    tmp1 = "test_state.json"
+    save_cluster_state(c, tmp1, output = :nested, time = 0.5)
+    txt1 = read(tmp1, String)
+    @test occursin("\"time\": 0.5", txt1)
+    @test occursin("\"force\": [2.0, null, 3.0]", txt1)
+    @test occursin("\"states\": [true, false, true]", txt1)
+
+    state_dict1 = bond_state_force(c; output = :nested, time = 0.0)
+    state_dict2 = bond_state_force(c; output = :nested, time = 1.0)
+    state_dict3 = bond_state_force(c; output = :nested, time = 2.0)
+    tmp2 = "test_states.json"
+    save_cluster_state([state_dict1, state_dict2, state_dict3], tmp2)
+    txt2 = read(tmp2, String)
+    @test occursin("\"time\": 0.0", txt2)
+    @test occursin("\"time\": 1.0", txt2)
+    @test occursin("\"time\": 2.0", txt2)
+    @test occursin("\"states\": [true, false, true]", txt2)
+    @test occursin("\"states\": [true, false, true]", txt2)
+    @test occursin("\"states\": [true, false, true]", txt2)
+    @test occursin("\"force\": [2.0, null, 3.0]", txt2)
+    @test occursin("\"force\": [2.0, null, 3.0]", txt2)
+    @test occursin("\"force\": [2.0, null, 3.0]", txt2)
+
+    nested_cluster = Cluster(
+        [
+            c,
+            c
+            ],
+        true,
+        convert(CellAdhesionFloat, 0.0),
+        :force_global,
+        convert(CellAdhesionInt, 2),
+        convert(CellAdhesionFloat, 1.0),
+    )
+    tmp3 = "test_nested_states.json"
+    save_cluster_state(nested_cluster, tmp3, output = :nested, time = 1.0)
+    txt3 = read(tmp3, String)
+    @test occursin("\"time\": 1.0", txt3)
+    @test occursin("\"states\": [[true, false, true], [true, false, true]]", txt3)
+    @test occursin("\"force\": [[2.0, null, 3.0], [2.0, null, 3.0]]", txt3)
+
+    return true
+end
+
+@test _check_save_cluster_state()
+
 @test _check_bond_state_force_nested()
