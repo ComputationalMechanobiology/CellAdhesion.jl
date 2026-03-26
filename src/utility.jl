@@ -1,5 +1,5 @@
 
-export print_cluster, plot_cluster
+export print_cluster, plot_cluster, plot_force_distribution
 
 
 """
@@ -108,3 +108,66 @@ function plot_cluster(v::Cluster, p, x)
   end
 end 
 
+
+
+
+
+"""
+  plot_force_distribution(v, p, x, y, cmap)
+
+  Plot bond tensions for a cluster, using the colormap `cmap` for closed bonds
+  and gray squares for open bonds.
+
+"""
+# Leaf cluster: bonds stacked along y, colored by tension.
+function plot_force_distribution!(v::Cluster{Bond{T}}, p, x, y = 0.0; cmap = :viridis,
+                       show_colorbar::Bool = true) where T <: BondModel
+  states, forces = bond_state_force(v)
+  y_coords = y .+ (0:(v.n - 1)) .* v.l
+  closed     = findall(states)
+  open_bonds = findall(.!states)
+
+  unit_square(x, y) = Shape(
+      [x - 0.5, x + 0.5, x + 0.5, x - 0.5],
+      [y - 0.5, y - 0.5, y + 0.5, y + 0.5]
+  )
+
+  if !isempty(closed)
+      for i in closed
+          plot!(p, unit_square(x, y_coords[i]);
+                fill_z = forces[i],
+                seriescolor = cmap,
+                linecolor = :transparent,
+                colorbar = show_colorbar,
+                colorbar_title = "Tension",
+                label = "")
+      end
+  end
+
+  if !isempty(open_bonds)
+      for i in open_bonds
+          plot!(p, unit_square(x, y_coords[i]);
+                fillcolor = "#e0e0e0",
+                linecolor = :transparent,
+                label = "")
+      end
+  end
+end
+
+# Hierarchical cluster: sub-clusters laid out horizontally (different x).
+function plot_force_distribution!(v::Cluster, p, x, y ; cmap = :viridis, show_colorbar::Bool = true)
+  running_y = 0     
+  for i = 1:v.n
+    plot_force_distribution!(v.u[i], p, x , y + running_y; cmap = cmap, show_colorbar = show_colorbar && i == 1)
+    running_y += v.u[i].n * v.u[i].l + v.l
+  end
+end
+
+# Wrapper that creates the plot and returns it.
+function plot_force_distribution(v, p, x, y, cmap)
+  p = plot!(p, legend = false, framestyle = :box)
+  plot_force_distribution!(v, p, x, y; cmap = cmap)
+  xlabel!(p, "time")
+  ylabel!(p, "Bond index")
+  return p
+end
