@@ -149,7 +149,7 @@ function _check_bond()
   model2 = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
   x2 = Bond(model2)
 
-  ((x1.state == false) && (x2.state == true) &&  typeof(x1) == Bond{SlipBondModel})
+  ((x1.state == false) && (x2.state == true) &&  typeof(x1) == Bond{BondModel{Slip}})
 
 end
 @test _check_bond()
@@ -175,7 +175,7 @@ end
 @test _check_cluster()
 
 
-function _check_cluster()
+function _check_cluster_v2()
 
   #n = convert(Vector{CellAdhesionInt}, [2,5])
   n = [2,5]
@@ -192,7 +192,7 @@ function _check_cluster()
 
   (
     (x1.n == 2)
-    && (typeof(x1.u[1].u[1]) == Bond{SlipBondModel})
+    && (typeof(x1.u[1].u[1]) == Bond{BondModel{Slip}})
     && (typeof(x1) == Cluster{Cluster})
     && (typeof(x2) == Cluster{Cluster})
     && (x2.n == 3)
@@ -204,7 +204,7 @@ function _check_cluster()
 
 end
 
-@test _check_cluster()
+@test _check_cluster_v2()
 
 function _check_runcluster(tol)
 
@@ -383,6 +383,9 @@ function _check_bond_state_force_nested()
     return true
 end
 
+@test _check_bond_state_force_nested()
+
+
 function _check_save_cluster_state()
     model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
     c = Cluster(3, 1.0, model, :force_global)
@@ -435,5 +438,3 @@ function _check_save_cluster_state()
 end
 
 @test _check_save_cluster_state()
-
-@test _check_bond_state_force_nested()
