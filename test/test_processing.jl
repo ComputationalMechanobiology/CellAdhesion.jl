@@ -393,9 +393,9 @@ function _check_save_cluster_state()
     tmp1 = "test_state.json"
     save_cluster_state(c, tmp1, output = :nested, time = 0.5)
     txt1 = read(tmp1, String)
-    @test occursin("\"time\": 0.5", txt1)
-    @test occursin("\"force\": [2.0, null, 3.0]", txt1)
-    @test occursin("\"states\": [true, false, true]", txt1)
+    @test occursin("\"time\":0.5", txt1)
+    @test occursin("\"force\":[2.0,nan,3.0]", txt1)
+    @test occursin("\"states\":[true,false,true]", txt1)
 
     state_dict1 = bond_state_force(c; output = :nested, time = 0.0)
     state_dict2 = bond_state_force(c; output = :nested, time = 1.0)
@@ -403,15 +403,15 @@ function _check_save_cluster_state()
     tmp2 = "test_states.json"
     save_cluster_state([state_dict1, state_dict2, state_dict3], tmp2)
     txt2 = read(tmp2, String)
-    @test occursin("\"time\": 0.0", txt2)
-    @test occursin("\"time\": 1.0", txt2)
-    @test occursin("\"time\": 2.0", txt2)
-    @test occursin("\"states\": [true, false, true]", txt2)
-    @test occursin("\"states\": [true, false, true]", txt2)
-    @test occursin("\"states\": [true, false, true]", txt2)
-    @test occursin("\"force\": [2.0, null, 3.0]", txt2)
-    @test occursin("\"force\": [2.0, null, 3.0]", txt2)
-    @test occursin("\"force\": [2.0, null, 3.0]", txt2)
+    @test occursin("\"time\":0.0", txt2)
+    @test occursin("\"time\":1.0", txt2)
+    @test occursin("\"time\":2.0", txt2)
+    @test occursin("\"states\":[true,false,true]", txt2)
+    @test occursin("\"states\":[true,false,true]", txt2)
+    @test occursin("\"states\":[true,false,true]", txt2)
+    @test occursin("\"force\":[2.0,nan,3.0]", txt2)
+    @test occursin("\"force\":[2.0,nan,3.0]", txt2)
+    @test occursin("\"force\":[2.0,nan,3.0]", txt2)
 
     nested_cluster = Cluster(
         [
@@ -427,9 +427,9 @@ function _check_save_cluster_state()
     tmp3 = "test_nested_states.json"
     save_cluster_state(nested_cluster, tmp3, output = :nested, time = 1.0)
     txt3 = read(tmp3, String)
-    @test occursin("\"time\": 1.0", txt3)
-    @test occursin("\"states\": [[true, false, true], [true, false, true]]", txt3)
-    @test occursin("\"force\": [[2.0, null, 3.0], [2.0, null, 3.0]]", txt3)
+    @test occursin("\"time\":1.0", txt3)
+    @test occursin("\"states\":[[true,false,true],[true,false,true]]", txt3)
+    @test occursin("\"force\":[[2.0,nan,3.0],[2.0,nan,3.0]]", txt3)
 
     return true
 end

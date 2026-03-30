@@ -382,55 +382,11 @@ Also supported helper overload:
 JSON encoding handles nested arrays/dicts, booleans, numbers, strings, and missing values.
 """
 
-# JSON utilities for minimal dependency-free serialization
-function _json_escape(str::String)
-    s = replace(str, "\\" => "\\\\")
-    s = replace(s, '"' => "\\\"")
-    s = replace(s, '\n' => "\\n")
-    s = replace(s, '\r' => "\\r")
-    s = replace(s, '\t' => "\\t")
-    return s
-end
-
-function _json_value(x)
-    if x === missing
-        return "null"
-    elseif x isa Bool
-        return x ? "true" : "false"
-    elseif x isa Integer
-        return string(x)
-    elseif x isa AbstractFloat
-        if isnan(x) || isinf(x)
-            return "null"
-        else
-            return string(x)
-        end
-    elseif x isa AbstractString
-        return "\"" * _json_escape(x) * "\""
-    elseif x isa Dict
-        items = String[]
-        for (key, value) in x
-            key_str = "\"" * _json_escape(string(key)) * "\""
-            push!(items, key_str * ": " * _json_value(value))
-        end
-        return "{" * join(items, ", ") * "}"
-    elseif x isa AbstractVector
-        encoded = _json_value.(x)
-        return "[" * join(encoded, ", ") * "]"
-    else
-        throw(ArgumentError("Unsupported data type for JSON serialization: $(typeof(x))"))
-    end
-end
-
-function _json_serialize(state)
-    return _json_value(state)
-end
-
 function _save_json_to_file(obj, file_name::String)
-    open(file_name, "w") do io
-        write(io, _json_serialize(obj))
-    end
-    return file_name
+  open(file_name, "w") do io
+    JSON.json(io, obj; allownan=true, nan="nan")
+  end
+  return file_name
 end
 
 function save_cluster_state(v::Cluster, file_name::String; output::Symbol = :nested, time::Union{Missing,Real} = missing)
