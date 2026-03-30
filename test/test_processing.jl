@@ -1,4 +1,6 @@
 
+using JSON
+
 println("===============================================")
 println("Testing processing.jl")
 println("===============================================")
@@ -274,6 +276,53 @@ function _check_runcluster_statecheck(tol)
 end
 
 @test _check_runcluster_statecheck(tol)
+
+
+function _check_runcluster_json_output()
+
+  model = SlipBondModel((k_on_0=0.0,), (k_off_0=0.0, f_1e=1.0))
+
+  bonds = Bond.(
+    [true, true],
+    convert(Vector{CellAdhesionFloat}, zeros(2)),
+    repeat([model], 2),
+  )
+
+  cluster = Cluster(
+    bonds,
+    true,
+    convert(CellAdhesionFloat, 0.0),
+    :force_global,
+    convert(CellAdhesionInt, 2),
+    convert(CellAdhesionFloat, 1.0),
+  )
+
+  force_history = [1.0, 2.0, 3.0]
+  json_path = "test_runcluster_states.json"
+
+  state, break_force, break_time, steps = runcluster(cluster, force_history, 0.5; json_file_name = json_path, max_steps = 3, verbose = false)
+
+  saved = JSON.parsefile(json_path)
+
+  expected_forces = [
+    convert(Vector{CellAdhesionFloat}, [0.0, 0.0]),
+    convert(Vector{CellAdhesionFloat}, [0.5, 0.5]),
+    convert(Vector{CellAdhesionFloat}, [1.0, 1.0]),
+    convert(Vector{CellAdhesionFloat}, [1.5, 1.5]),
+  ]
+
+  expected_times = convert(Vector{CellAdhesionFloat}, [0.0, 0.5, 1.0, 1.5])
+
+  states_ok = all(saved[i]["states"] == [true, true] for i in 1:length(saved))
+  forces_ok = all(i -> all(isapprox.(saved[i]["force"], expected_forces[i])), 1:length(saved))
+  times_ok = all(isapprox(saved[i]["time"], expected_times[i]) for i in 1:length(saved))
+  run_ok = (state == true) && isapprox(break_force, convert(CellAdhesionFloat, 3.0)) && isapprox(break_time, convert(CellAdhesionFloat, 1.5)) && (steps == 3)
+
+  return run_ok && (length(saved) == 4) && states_ok && forces_ok && times_ok
+
+end
+
+@test _check_runcluster_json_output()
 
 
 function _check_bond_state_force()
