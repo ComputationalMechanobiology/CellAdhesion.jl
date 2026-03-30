@@ -132,9 +132,20 @@ function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64; max_steps::
 
 end
 
+function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64, file_name::String, ; max_steps::Integer = 1000, verbose::Bool = false)
+  # dispatch to the appropriate method based on file extension
+  ext = splitext(file_name)[2]
+  if ext == ".json"
+    return runcluster_json(v, force, dt, file_name; max_steps = max_steps, verbose = verbose)
+  elseif ext in [".svg", ".png", ".jpg", ".jpeg"]
+    return runcluster_plot(v, force, dt, file_name; max_steps = max_steps, verbose = verbose)
+  else
+    throw(ArgumentError("Unsupported file extension: $ext. Supported extensions are .json, .svg, .png, .jpg, .jpeg"))
+  end
+end 
 
 
-function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64, file_name::String; max_steps::Integer = 1000, verbose::Bool = false)
+function runcluster_plot(v::Cluster, force::Vector{Float64}, dt::Float64, plot_file_name::String, ; max_steps::Integer = 1000, verbose::Bool = false)
 
   # Arbitrary force history applied to the junction
   n = length(force)
@@ -169,16 +180,14 @@ function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64, file_name::
       end
   end
 
-  savefig(p, file_name)
+  savefig(p, plot_file_name)
 
   return v.state, force[step-1], dt*(step-1), (step-1)
-
-
 end
 
 
 
-function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64; json_file_name::String = "cluster.json", max_steps::Integer = 1000, verbose::Bool = false)
+function runcluster_json(v::Cluster, force::Vector{Float64}, dt::Float64, json_file_name::String; max_steps::Integer = 1000, verbose::Bool = false)
   # Arbitrary force history applied to the junction
   n = length(force)
   if max_steps > n
@@ -188,22 +197,28 @@ function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64; json_file_n
   end
   
   step = 1
-  states = [bond_state_force(v; output = :nested, time = 0.0)]
+  states = Vector{AbstractDict}()
   force = convert(Vector{CellAdhesionFloat},force)
   dt = convert(CellAdhesionFloat, dt)
   while (step <= max_steps) && (v.state == true)
       F = force[step]
       setforce!(v, F)
+      push!(states, bond_state_force(v; output = :nested, time = (step-1)*dt))
       update!(v, dt)
-      push!(states, bond_state_force(v; output = :nested, time = step*dt))
       step = step + 1
-    end
+  end
+  if v.state == false
+    # add the state after the final update!
+    F = force[step-1]
+    setforce!(v, F)
+    push!(states, bond_state_force(v; output = :nested, time = (step-1)*dt))
+  end
   if verbose == true
-      if v.state == false
-          print("Junction broken")
-      elseif step > max_steps
-          print("Maximum number of iterations reached")
-      end
+    if v.state == false
+        print("Junction broken")
+    elseif step > max_steps
+        print("Maximum number of iterations reached")
+    end
   end
   save_cluster_state(states, json_file_name)
   return v.state, force[step-1], dt*(step-1), (step-1)
@@ -313,49 +328,76 @@ end
 
   Return bond state/force information for a `Bond`, a `Cluster{Bond}`, or nested `Cluster`.
 
-  - output=:flat (default) returns tuples (states, forces) identical to previous API.
-  - output=:nested returns a Dict with keys "time", "states", "force", preserving hierarchy:
-      * Bond -> Bool and scalar float
-      * Cluster{Bond} -> Vector of Bool / Float
-      * nested Cluster -> nested Vector structures
+  - `output=:flat` (default) returns tuples `(states, forces)` identical to the previous API.
+  - `output=:nested` returns a `Dict` with keys "time", "states", "force" that includes
+    each level of the hierarchy. At every cluster level, the first entry is the cluster
+    state/force, followed by its children. Example structure:
 
-  Closed bonds are assigned `NaN` in force output.
+    * states = [true, [[true, [true, true, false]],
+                       [false, [false, false, false]],
+                       [true, [true, false, false]]]]
+    * force  = [4.0, [[3.0, [1.0, 2.0, NaN]],
+                      [NaN, [NaN, NaN, NaN]],
+                      [1.0, [1.0, NaN, NaN]]]]
+
+  Closed bonds are assigned `NaN` in the force output.
 """
-function bond_state_force(v::Bond; output::Symbol = :flat, time::Union{Missing,Real} = missing)
-  state = v.state
-  force = state ? v.f : convert(CellAdhesionFloat, NaN)
 
+function _state_force_tree(v::Bond)
+  force = v.state ? v.f : convert(CellAdhesionFloat, NaN)
+  return v.state, force
+end
+
+function _state_force_tree(v::Cluster{Bond{T}}) where T <: BondModel
+  states = getfield.(v.u, :state)
+  force_out = Vector{CellAdhesionFloat}(undef, v.n)
+  for i = 1:v.n
+    force_out[i] = v.u[i].state ? v.u[i].f : convert(CellAdhesionFloat, NaN)
+  end
+  return Any[v.state, states], Any[v.f, force_out]
+end
+
+function _state_force_tree(v::Cluster)
+  nested_states = Vector{Any}(undef, v.n)
+  nested_forces = Vector{Any}(undef, v.n)
+  for i = 1:v.n
+    nested_states[i], nested_forces[i] = _state_force_tree(v.u[i])
+  end
+  return Any[v.state, nested_states], Any[v.f, nested_forces]
+end
+
+function _state_force_dict(v, time)
+  states_tree, force_tree = _state_force_tree(v)
+  return Dict(
+    "time" => time,
+    "states" => states_tree,
+    "force" => force_tree,
+  )
+end
+
+function bond_state_force(v::Bond; output::Symbol = :flat, time::Union{Missing,Real} = missing)
   if output == :flat
+    state = v.state
+    force = v.state ? v.f : convert(CellAdhesionFloat, NaN)
     return Bool[state], CellAdhesionFloat[force]
   elseif output == :nested
-    return Dict(
-      "time" => time,
-      "states" => state,
-      "force" => force,
-    )
+    return _state_force_dict(v, time)
   else
     throw(ArgumentError("output must be :flat or :nested"))
   end
 end
 
 function bond_state_force(v::Cluster{Bond{T}}; output::Symbol = :flat, time::Union{Missing,Real} = missing) where T <: BondModel
-  states = getfield.(v.u, :state)
-  forces = getfield.(v.u, :f)
-  nan_value = convert(CellAdhesionFloat, NaN)
-
-  force_out = Vector{CellAdhesionFloat}(undef, v.n)
-  for i = 1:v.n
-    force_out[i] = states[i] ? forces[i] : nan_value
-  end
-
   if output == :flat
+    states = getfield.(v.u, :state)
+    forces = getfield.(v.u, :f)
+    force_out = Vector{CellAdhesionFloat}(undef, v.n)
+    for i = 1:v.n
+      force_out[i] = states[i] ? forces[i] : convert(CellAdhesionFloat, NaN)
+    end
     return states, force_out
   elseif output == :nested
-    return Dict(
-      "time" => time,
-      "states" => states,
-      "force" => force_out,
-    )
+    return _state_force_dict(v, time)
   else
     throw(ArgumentError("output must be :flat or :nested"))
   end
@@ -372,18 +414,7 @@ function bond_state_force(v::Cluster; output::Symbol = :flat, time::Union{Missin
     end
     return states, forces
   elseif output == :nested
-    nested_states = Vector{Any}(undef, v.n)
-    nested_forces = Vector{Any}(undef, v.n)
-    for i = 1:v.n
-      sub = bond_state_force(v.u[i]; output = :nested, time = time)
-      nested_states[i] = sub["states"]
-      nested_forces[i] = sub["force"]
-    end
-    return Dict(
-      "time" => time,
-      "states" => nested_states,
-      "force" => nested_forces,
-    )
+    return _state_force_dict(v, time)
   else
     throw(ArgumentError("output must be :flat or :nested"))
   end
