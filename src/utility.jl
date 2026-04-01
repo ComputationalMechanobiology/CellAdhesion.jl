@@ -6,11 +6,13 @@ export print_cluster, plot_cluster, plot_force_distribution
 state!(v)
 
 Updates the state field of a Cluster or a Bond.
-When all the subunits are open, then the state of the structure is set to open. Otherwise, it is close.   
+When all the subunits are open, then the state of the structure is set to open. Otherwise, it is close.
 
-Input paramters:
-  - v: interface that can either be a Cluster or a Bond. 
+Input parameters:
+  - v: interface that can either be a Cluster or a Bond.
 
+Output:
+  State of the cluster/bond, false for broken, true otherwise.
 """
 function state!(v::Bond)
 
@@ -20,27 +22,22 @@ end
 
 function state!(v::Cluster)
 
-  interface_v = Vector{Bool}(undef,v.n)
+  clusterstate = false
 
-  for i = 1:1:v.n 
-    k = v.u[i]
-    interface_v[i] = state!(k)  
+  for i = 1:1:v.n
+    clusterstate |= state!(v.u[i])
   end
 
-  # If the sum of the state values is 0, the junction is broken 
-  sum_v = sum(interface_v);
-  state = isequal(sum_v,0);
-
   # Update the state value of the junction
-  setfield!(v, :state, !state)
-  
+  setfield!(v, :state, clusterstate)
+  return clusterstate
 
 end
 
 
 
 "
-Base.setproperty!   
+Base.setproperty!
 
 Definition to update Interface struct fields
 "

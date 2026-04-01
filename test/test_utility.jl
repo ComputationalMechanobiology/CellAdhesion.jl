@@ -4,20 +4,6 @@ println("Testing utility.jl")
 println("===============================================")
 
 
-function _check_SlipBondModel()
-
-    k_on_params = (k_on_0 = 0.2,)
-    k_off_params = (k_off_0 = 0.8, f_1e = 1.0)
-
-    model = SlipBondModel(k_on_params, k_off_params)
-
-    typeof(model) == SlipBondModel
-
-end
-
-@test _check_SlipBondModel()
-
-
 
 function _check_print()
     model1 = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
@@ -46,7 +32,6 @@ function _check_state()
     model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
     n = convert(CellAdhesionInt, 4)
     l = convert(CellAdhesionFloat, 1.0)
-    F = convert(CellAdhesionFloat, 60.0)
   
     force_string = :force_global
     v1 = Cluster(Bond.([true,false,true, true], convert(Vector{CellAdhesionFloat}, zeros(n)), repeat([model], n)), false, convert(CellAdhesionFloat, 0.0), force_string, n, l)
@@ -143,3 +128,20 @@ function _check_plot()
 end
 
 @test _check_plot()
+
+
+@testset "Plot cluster (smoke test)" begin
+    model = SlipBondModel((k_on_0=0.2,), (k_off_0=0.8, f_1e=1))
+    n = 5
+    l = convert(CellAdhesionFloat, 1.0)
+    force_sym = :force_global
+
+    cluster = Cluster([Bond(true,convert(CellAdhesionFloat, 0.0),model) for i in 1:n], true, convert(CellAdhesionFloat, 0.0), force_sym, convert(CellAdhesionInt, n), l)
+    p = plot()
+    @test try
+        plot_cluster(cluster, p, 0.0, 1.0)
+        true
+    catch
+        false
+    end
+end

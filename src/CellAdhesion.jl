@@ -12,8 +12,10 @@ using Plots
 using JSON
 
 export Bond, Cluster
+export BondModel, BondType, Slip, Catch
 export SlipBondModel, CatchBondModel
 
+include("bondmodels.jl")
 
 include("definitions.jl")
 include("utility.jl")
