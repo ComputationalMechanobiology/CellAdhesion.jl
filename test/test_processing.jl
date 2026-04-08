@@ -278,34 +278,6 @@ end
 @test _check_runcluster_statecheck(tol)
 
 
-function _check_runcluster_plot_output()
-
-  model = SlipBondModel((k_on_0=0.0,), (k_off_0=0.0, f_1e=1.0))
-
-  bonds = Bond.(
-    [true, true],
-    convert(Vector{CellAdhesionFloat}, zeros(2)),
-    repeat([model], 2),
-  )
-
-  cluster = Cluster(
-    bonds,
-    true,
-    convert(CellAdhesionFloat, 0.0),
-    :force_global,
-    convert(CellAdhesionInt, 2),
-    convert(CellAdhesionFloat, 1.0),
-  )
-
-  force_history = [1.0, 2.0, 3.0]
-  plot_path = "test_runcluster_states.png"
-
-  runcluster(cluster, force_history, 0.5, plot_path; max_steps = 3, verbose = false)
-  1==1
-end
-
-@test _check_runcluster_plot_output()
-
 function _check_runcluster_json_output()
 
   model = SlipBondModel((k_on_0=0.0,), (k_off_0=0.0, f_1e=1.0))
@@ -332,28 +304,46 @@ function _check_runcluster_json_output()
 
   saved = JSON.parsefile(json_path)
 
-  expected_cluster_forces = convert(Vector{CellAdhesionFloat}, [1.0, 2.0, 3.0])
-  expected_bond_forces = [
-    convert(Vector{CellAdhesionFloat}, [0.5, 0.5]),
-    convert(Vector{CellAdhesionFloat}, [1.0, 1.0]),
-    convert(Vector{CellAdhesionFloat}, [1.5, 1.5]),
-  ]
-
-  expected_times = convert(Vector{CellAdhesionFloat}, [0.0, 0.5, 1.0])
-
-  states_ok = all(
-    saved[i]["states"][1] == true && saved[i]["states"][2] == [true, true]
-    for i in 1:length(saved)
+  cluster_ok = (
+    saved["cluster"]["type"] == "cluster"
+    && saved["cluster"]["f_model"] == "force_global"
+    && saved["cluster"]["n"] == 2
+    && isapprox(saved["cluster"]["l"], 1.0)
+    && length(saved["cluster"]["children"]) == 2
   )
-  forces_ok = all(
-    i -> isapprox(saved[i]["force"][1], expected_cluster_forces[i]) &&
-         all(isapprox.(saved[i]["force"][2], expected_bond_forces[i])),
-    1:length(saved)
+
+  force_ok = all(isapprox.(saved["force"], [1.0, 2.0, 3.0]))
+  dt_ok = isapprox(saved["dt"], 0.5)
+
+  time_key_map = Dict(
+    parse(Float64, k) => k
+    for k in keys(saved)
+    if k != "cluster" && k != "force" && k != "dt"
   )
-  times_ok = all(isapprox(saved[i]["time"], expected_times[i]) for i in 1:length(saved))
+
+  times_ok = (
+    length(time_key_map) == 3
+    && haskey(time_key_map, 0.0)
+    && haskey(time_key_map, 0.5)
+    && haskey(time_key_map, 1.0)
+  )
+
+  t0_force_tree = saved[time_key_map[0.0]]
+  t05_force_tree = saved[time_key_map[0.5]]
+  t1_force_tree = saved[time_key_map[1.0]]
+
+  force_trees_ok = (
+    isapprox(t0_force_tree[1], 1.0)
+    && all(isapprox.(t0_force_tree[2], [0.5, 0.5]))
+    && isapprox(t05_force_tree[1], 2.0)
+    && all(isapprox.(t05_force_tree[2], [1.0, 1.0]))
+    && isapprox(t1_force_tree[1], 3.0)
+    && all(isapprox.(t1_force_tree[2], [1.5, 1.5]))
+  )
+
   run_ok = (state == true) && isapprox(break_force, convert(CellAdhesionFloat, 3.0)) && isapprox(break_time, convert(CellAdhesionFloat, 1.5)) && (steps == 3)
 
-  return run_ok && states_ok && forces_ok && times_ok
+  return run_ok && cluster_ok && force_ok && dt_ok && times_ok && force_trees_ok
 
 end
 
@@ -456,22 +446,15 @@ function _check_bond_state_force_nested()
     flat_nested = bond_state_force(flat_cluster; output = :nested, time = 0.5)
     nested_nested = bond_state_force(nested_cluster; output = :nested, time = 1.3)
 
-    @test flat_nested["time"] == 0.5
-    @test flat_nested["states"][1] == true
-    @test flat_nested["states"][2] == Bool[true, false, true]
-    @test isapprox(flat_nested["force"][1], convert(CellAdhesionFloat, 0.0))
-    @test all(isequal.(flat_nested["force"][2], convert(Vector{CellAdhesionFloat}, [1.0, NaN, 3.0])))
+    @test haskey(flat_nested, 0.5)
+    flat_force_tree = flat_nested[0.5]
+    @test isapprox(flat_force_tree[1], convert(CellAdhesionFloat, 0.0))
+    @test all(isequal.(flat_force_tree[2], convert(Vector{CellAdhesionFloat}, [1.0, NaN, 3.0])))
 
-    @test nested_nested["time"] == 1.3
-    @test nested_nested["states"][1] == true
-    child_states = nested_nested["states"][2]
-    @test child_states[1][1] == true
-    @test child_states[1][2] == Bool[true, false, true]
-    @test child_states[2][1] == true
-    @test child_states[2][2] == Bool[false, true]
-
-    @test isapprox(nested_nested["force"][1], convert(CellAdhesionFloat, 0.0))
-    child_forces = nested_nested["force"][2]
+    @test haskey(nested_nested, 1.3)
+    nested_force_tree = nested_nested[1.3]
+    @test isapprox(nested_force_tree[1], convert(CellAdhesionFloat, 0.0))
+    child_forces = nested_force_tree[2]
     @test isapprox(child_forces[1][1], convert(CellAdhesionFloat, 0.0))
     @test all(isequal.(child_forces[1][2], convert(Vector{CellAdhesionFloat}, [1.0, NaN, 3.0])))
     @test isapprox(child_forces[2][1], convert(CellAdhesionFloat, 0.0))
@@ -491,48 +474,124 @@ function _check_save_cluster_state()
     c.state = true
     c.f = convert(CellAdhesionFloat, 5.0)
 
-    tmp1 = "test_state.json"
-    save_cluster_state(c, tmp1, output = :nested, time = 0.5)
-    txt1 = read(tmp1, String)
-    @test occursin("\"time\":0.5", txt1)
-    @test occursin("\"force\":[5.0,[2.0,nan,3.0]]", txt1)
-    @test occursin("\"states\":[true,[true,false,true]]", txt1)
-
     state_dict1 = bond_state_force(c; output = :nested, time = 0.0)
     state_dict2 = bond_state_force(c; output = :nested, time = 1.0)
     state_dict3 = bond_state_force(c; output = :nested, time = 2.0)
-    tmp2 = "test_states.json"
-    save_cluster_state([state_dict1, state_dict2, state_dict3], tmp2)
-    txt2 = read(tmp2, String)
-    @test occursin("\"time\":0.0", txt2)
-    @test occursin("\"time\":1.0", txt2)
-    @test occursin("\"time\":2.0", txt2)
-    @test occursin("\"states\":[true,[true,false,true]]", txt2)
-    @test occursin("\"states\":[true,[true,false,true]]", txt2)
-    @test occursin("\"states\":[true,[true,false,true]]", txt2)
-    @test occursin("\"force\":[5.0,[2.0,nan,3.0]]", txt2)
-    @test occursin("\"force\":[5.0,[2.0,nan,3.0]]", txt2)
-    @test occursin("\"force\":[5.0,[2.0,nan,3.0]]", txt2)
+    states = [state_dict1, state_dict2, state_dict3]
 
-    nested_cluster = Cluster(
-        [
-            c,
-            c
-            ],
-        true,
-        convert(CellAdhesionFloat, 10.0),
-        :force_global,
-        convert(CellAdhesionInt, 2),
-        convert(CellAdhesionFloat, 1.0),
+    force_history = [1.0, 2.0, 3.0]
+    dt = 1.0
+    tmp1 = "test_state.json"
+    save_cluster_state(c, force_history, states, tmp1, dt)
+
+    saved = JSON.parsefile(tmp1; allownan = true, nan = "nan")
+
+    cluster_ok = (
+      saved["cluster"]["type"] == "cluster"
+      && saved["cluster"]["f_model"] == "force_global"
+      && saved["cluster"]["n"] == 3
+      && isapprox(saved["cluster"]["l"], 1.0)
+      && length(saved["cluster"]["children"]) == 3
     )
-    tmp3 = "test_nested_states.json"
-    save_cluster_state(nested_cluster, tmp3, output = :nested, time = 1.0)
-    txt3 = read(tmp3, String)
-    @test occursin("\"time\":1.0", txt3)
-    @test occursin("\"states\":[true,[[true,[true,false,true]],[true,[true,false,true]]]]", txt3)
-    @test occursin("\"force\":[10.0,[[5.0,[2.0,nan,3.0]],[5.0,[2.0,nan,3.0]]]]", txt3)
 
-    return true
+    force_ok = all(isapprox.(saved["force"], force_history))
+    dt_ok = isapprox(saved["dt"], dt)
+
+    time_key_map = Dict(
+      parse(Float64, k) => k
+      for k in keys(saved)
+      if k != "cluster" && k != "force" && k != "dt"
+    )
+
+    times_ok = (
+      length(time_key_map) == 3
+      && haskey(time_key_map, 0.0)
+      && haskey(time_key_map, 1.0)
+      && haskey(time_key_map, 2.0)
+    )
+
+    t0_force_tree = saved[time_key_map[0.0]]
+    t1_force_tree = saved[time_key_map[1.0]]
+    t2_force_tree = saved[time_key_map[2.0]]
+
+    trees_ok = (
+      isapprox(t0_force_tree[1], 5.0)
+      && isapprox(t0_force_tree[2][1], 2.0)
+      && isnan(t0_force_tree[2][2])
+      && isapprox(t0_force_tree[2][3], 3.0)
+      && isapprox(t1_force_tree[1], 5.0)
+      && isapprox(t1_force_tree[2][1], 2.0)
+      && isnan(t1_force_tree[2][2])
+      && isapprox(t1_force_tree[2][3], 3.0)
+      && isapprox(t2_force_tree[1], 5.0)
+      && isapprox(t2_force_tree[2][1], 2.0)
+      && isnan(t2_force_tree[2][2])
+      && isapprox(t2_force_tree[2][3], 3.0)
+    )
+
+    return cluster_ok && force_ok && dt_ok && times_ok && trees_ok
 end
 
 @test _check_save_cluster_state()
+
+
+function _check_save_load_cluster_parameters()
+  model = SlipBondModel((k_on_0=1.1,), (k_off_0=0.2, f_1e=3.3))
+
+  child_a = Cluster(2, 0.5, model, :force_global)
+  child_b = Cluster(2, 0.5, model, :force_local)
+
+  root_cluster = Cluster(
+    [child_a, child_b],
+    true,
+    convert(CellAdhesionFloat, 0.0),
+    :force_global,
+    convert(CellAdhesionInt, 2),
+    convert(CellAdhesionFloat, 1.5),
+  )
+
+  tmp = "test_cluster_params.json"
+  save_cluster_parameters(root_cluster, tmp)
+  loaded = load_cluster_parameters(tmp)
+
+  root_ok = (
+    loaded.n == 2
+    && loaded.f_model == :force_global
+    && isapprox(loaded.l, convert(CellAdhesionFloat, 1.5))
+  )
+
+  children_ok = (
+    length(loaded.u) == 2
+    && loaded.u[1] isa Cluster
+    && loaded.u[2] isa Cluster
+    && loaded.u[1].n == 2
+    && loaded.u[2].n == 2
+    && loaded.u[1].f_model == :force_global
+    && loaded.u[2].f_model == :force_local
+  )
+
+  bonds_ok = (
+    all(b -> b isa Bond{BondModel{Slip}}, loaded.u[1].u)
+    && all(b -> b isa Bond{BondModel{Slip}}, loaded.u[2].u)
+  )
+
+  p1 = getfield(loaded.u[1].u[1].model, :p)
+  p2 = getfield(loaded.u[2].u[2].model, :p)
+  params_ok = (
+    isapprox(p1.k_on, convert(CellAdhesionFloat, 1.1))
+    && isapprox(p1.k_off_0, convert(CellAdhesionFloat, 0.2))
+    && isapprox(p1.f_1e, convert(CellAdhesionFloat, 3.3))
+    && isapprox(p2.k_on, convert(CellAdhesionFloat, 1.1))
+    && isapprox(p2.k_off_0, convert(CellAdhesionFloat, 0.2))
+    && isapprox(p2.f_1e, convert(CellAdhesionFloat, 3.3))
+  )
+
+  reset_ok = (
+    all(b -> (b.state == false) && isnan(b.f), loaded.u[1].u)
+    && all(b -> (b.state == false) && isnan(b.f), loaded.u[2].u)
+  )
+
+  return root_ok && children_ok && bonds_ok && params_ok && reset_ok
+end
+
+@test _check_save_load_cluster_parameters()

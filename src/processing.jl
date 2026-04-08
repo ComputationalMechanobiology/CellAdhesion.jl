@@ -1,4 +1,4 @@
-export update!, runcluster, Cluster, Bond, bond_state_force, save_cluster_state
+export update!, runcluster, Cluster, Bond, bond_state_force, save_cluster_state, save_cluster_parameters, load_cluster_parameters
 
 
 """
@@ -128,62 +128,8 @@ function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64; max_steps::
 
 end
 
-function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64, file_name::String, ; max_steps::Integer = 1000, verbose::Bool = false)
-  # dispatch to the appropriate method based on file extension
-  ext = splitext(file_name)[2]
-  if ext == ".json"
-    return runcluster_json(v, force, dt, file_name; max_steps = max_steps, verbose = verbose)
-  elseif ext in [".svg", ".png", ".jpg", ".jpeg"]
-    return runcluster_plot(v, force, dt, file_name; max_steps = max_steps, verbose = verbose)
-  else
-    throw(ArgumentError("Unsupported file extension: $ext. Supported extensions are .json, .svg, .png, .jpg, .jpeg"))
-  end
-end 
 
-
-function runcluster_plot(v::Cluster, force::Vector{Float64}, dt::Float64, plot_file_name::String, ; max_steps::Integer = 1000, verbose::Bool = false)
-
-  # Arbitrary force history applied to the junction
-  n = length(force)
-
-  if max_steps > n
-         @warn max_steps<=n "Maximum number of steps exceed force vector length"
-  	 max_steps = n
-         print("\n Maximum number of steps = ", max_steps, "\n")
-  end
-  
-
-  step = 1
-  p = plot()
-  plot_cluster(v, p, step, 0)
-
-  force = convert(Vector{CellAdhesionFloat},force)
-  dt = convert(CellAdhesionFloat, dt)
-
-  while (step <= max_steps) && (v.state == true)
-      F = force[step]
-      setforce!(v, F)
-      update!(v, dt)
-      step = step + 1
-      plot_cluster(v, p, step, 0)
-  end
-
-  if verbose == true
-      if v.state == false
-          print("Junction broken")
-      elseif step > max_steps
-          print("Maximum number of iterations reached")
-      end
-  end
-
-  savefig(p, plot_file_name)
-
-  return v.state, force[step-1], dt*(step-1), (step-1)
-end
-
-
-
-function runcluster_json(v::Cluster, force::Vector{Float64}, dt::Float64, json_file_name::String; max_steps::Integer = 1000, verbose::Bool = false)
+function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64, json_file_name::String; max_steps::Integer = 1000, verbose::Bool = false)
   # Arbitrary force history applied to the junction
   n = length(force)
   if max_steps > n
@@ -216,11 +162,9 @@ function runcluster_json(v::Cluster, force::Vector{Float64}, dt::Float64, json_f
         print("Maximum number of iterations reached")
     end
   end
-  save_cluster_state(states, json_file_name)
+  save_cluster_state(v, force, states, json_file_name, dt)
   return v.state, force[step-1], dt*(step-1), (step-1)
 end
-
-
 
 
 
@@ -371,11 +315,10 @@ function _state_force_tree(v::Cluster)
 end
 
 function _state_force_dict(v, time)
-  states_tree, force_tree = _state_force_tree(v)
+  state_tree, force_tree = _state_force_tree(v)
+  
   return Dict(
-    "time" => time,
-    "states" => states_tree,
-    "force" => force_tree,
+    time => force_tree,
   )
 end
 
@@ -447,25 +390,179 @@ Also supported helper overload:
 JSON encoding handles nested arrays/dicts, booleans, numbers, strings, and missing values.
 """
 
-function _save_json_to_file(obj, file_name::String)
-  open(file_name, "w") do io
-    JSON.json(io, obj; allownan=true, nan="nan")
+function save_cluster_state(v::Cluster, force::AbstractVector{<:Real}, states::Vector{<:AbstractDict}, file_name::String, dt::Real)
+  combined_dict = Dict()
+  
+  # save cluster structure information: cluster has f_model, n, l, Bonds have model type and parameters.
+  cluster_dict = _save_cluster_to_dict(v)
+  combined_dict["cluster"] = cluster_dict
+
+  # add forces and dt
+  combined_dict["force"] = force
+  combined_dict["dt"] = dt
+
+  # combine vector of dicts into a single dict with time as keys and force trees as values
+  for state in states
+      for (time, force_tree) in state
+          combined_dict[time] = force_tree
+      end
   end
-  return file_name
+  
+  open(file_name, "w") do io
+    JSON.json(io, combined_dict; allownan=true, nan="nan")
+  end
+
 end
 
-function save_cluster_state(v::Cluster, file_name::String; output::Symbol = :nested, time::Union{Missing,Real} = missing)
-    state = bond_state_force(v; output = output, time = time)
-    _save_json_to_file(state, file_name)
+
+
+
+"""
+  _save_bond_to_dict(bond::Bond)::Dict
+
+Serialize a Bond's parameters to a dictionary. Includes model type, and all model parameters.
+Handles NaN values by converting them to the string "nan" for JSON compatibility.
+"""
+function _save_bond_to_dict(bond::Bond)::Dict
+  # Extract the BondType from the BondModel{T} type parameter
+  bond_model_type = typeof(bond.model)
+  model_type = String(nameof(bond_model_type.parameters[1]))
+  
+  # Extract model parameters from the NamedTuple using getfield to access the actual field
+  params_tuple = getfield(bond.model, :p)
+  model_params = Dict(String(k) => v for (k, v) in pairs(params_tuple))
+    
+  return Dict(
+    "type" => "bond",
+    "model_type" => model_type,
+    "model_params" => model_params
+  )
 end
 
-function save_cluster_state(states::Vector{<:AbstractDict}, file_name::String)
-    _save_json_to_file(states, file_name)
+
+"""
+  _save_cluster_to_dict(cluster::Cluster)::Dict
+
+Recursively serialize a Cluster's parameters to a dictionary. Includes cluster-level parameters
+(f_model, n, l) and recursively saves all children (which can be Bonds or nested Clusters).
+"""
+function _save_cluster_to_dict(cluster::Cluster)::Dict
+  # Handle NaN in force
+  force_val = isnan(cluster.f) ? "nan" : cluster.f
+  
+  # Recursively save children
+  children = []
+  for i = 1:cluster.n
+    child = cluster.u[i]
+    if isa(child, Bond)
+      push!(children, _save_bond_to_dict(child))
+    else  # isa(child, Cluster)
+      push!(children, _save_cluster_to_dict(child))
+    end
+  end
+  
+  return Dict(
+    "type" => "cluster",
+    "f_model" => String(cluster.f_model),
+    "n" => Int(cluster.n),
+    "l" => Float64(cluster.l),
+    "children" => children
+  )
 end
 
-# convenience additional overload
-function save_cluster_state(state::Dict, file_name::String)
-    _save_json_to_file(state, file_name)
+
+"""
+  save_cluster_parameters(cluster::Cluster, filename::String)
+
+Save all parameters of a cluster (or cluster of clusters) to a JSON file.
+
+Example:
+```julia
+model = SlipBondModel((k_on_0=1.0,), (k_off_0=2.0, f_1e=3.0))
+cluster = Cluster(5, 1.0, model, :force_global)
+save_cluster_parameters(cluster, "cluster_params.json")
+```
+"""
+function save_cluster_parameters(cluster::Cluster, filename::String)
+  cluster_dict = _save_cluster_to_dict(cluster)
+  
+  open(filename, "w") do io
+    JSON.json(io, cluster_dict; allownan=true, nan="nan")
+  end
+end
+
+
+"""
+  _load_bond_from_dict(bond_dict::Union{Dict, AbstractDict})::Bond
+
+Deserialize a Bond from a dictionary. Reconstructs the BondModel with the correct type and parameters.
+"""
+function _load_bond_from_dict(bond_dict::Union{Dict, AbstractDict})::Bond
+  model_type_str = bond_dict["model_type"]
+  model_params = bond_dict["model_params"]
+  
+  # Reconstruct the BondModel with the saved type and parameters
+  if model_type_str == "Slip"
+    model_type_class = Slip
+  elseif model_type_str == "Catch"
+    model_type_class = Catch
+  else
+    throw(ArgumentError("Unknown bond model type: $model_type_str"))
+  end
+  
+  # Convert parameter names from strings to symbols and values to CellAdhesionFloat
+  kwargs = Dict(Symbol(k) => convert(CellAdhesionFloat, v) for (k, v) in model_params)
+  
+  # Create the BondModel using the generic constructor
+  model = BondModel{model_type_class}(; kwargs...)
+  
+  return Bond(false, convert(CellAdhesionFloat, NaN), model)
+end
+
+
+"""
+  _load_cluster_from_dict(cluster_dict::Union{Dict, AbstractDict})::Cluster
+
+Recursively deserialize a Cluster from a dictionary. Reconstructs the complete cluster hierarchy
+by recursively loading children (which can be Bonds or nested Clusters).
+"""
+function _load_cluster_from_dict(cluster_dict::Union{Dict, AbstractDict})::Cluster
+  f_model = Symbol(cluster_dict["f_model"])
+  n = convert(CellAdhesionInt, cluster_dict["n"])
+  l = convert(CellAdhesionFloat, cluster_dict["l"])
+  
+  children_dicts = cluster_dict["children"]
+  
+  # Recursively load children and create a vector of the appropriate type
+  children = []
+  for child_dict in children_dicts
+    if child_dict["type"] == "bond"
+      push!(children, _load_bond_from_dict(child_dict))
+    else  # child_dict["type"] == "cluster"
+      push!(children, _load_cluster_from_dict(child_dict))
+    end
+  end
+  
+  # Create a Cluster with the loaded data
+  cluster = Cluster(children, false, convert(CellAdhesionFloat, NaN), f_model, n, l)
+  
+  return cluster
+end
+
+
+"""
+  load_cluster_parameters(filename::String)::Cluster
+
+Load a cluster from a JSON file that was saved with save_cluster_parameters.
+
+Example:
+```julia
+cluster = load_cluster_parameters("cluster_params.json")
+```
+"""
+function load_cluster_parameters(filename::String)::Cluster
+  data = JSON.parsefile(filename; allownan=true, nan="nan")
+  return _load_cluster_from_dict(data)
 end
 
 
