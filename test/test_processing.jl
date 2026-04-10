@@ -465,133 +465,103 @@ end
 @test _check_bond_state_force_nested()
 
 
-function _check_save_cluster_state()
-    model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
-    c = Cluster(3, 1.0, model, :force_global)
-    c.u[1].state = true; c.u[1].f = 2.0
-    c.u[2].state = false; c.u[2].f = 2.0
-    c.u[3].state = true; c.u[3].f = 3.0
-    c.state = true
-    c.f = convert(CellAdhesionFloat, 5.0)
+function _check_save_cluster_to_json()
 
-    state_dict1 = bond_state_force(c; output = :nested, time = 0.0)
-    state_dict2 = bond_state_force(c; output = :nested, time = 1.0)
-    state_dict3 = bond_state_force(c; output = :nested, time = 2.0)
-    states = [state_dict1, state_dict2, state_dict3]
+  model = SlipBondModel((k_on_0=1.0,), (k_off_0=2.0, f_1e=3.0))
+  cluster = Cluster(5, 1.0, model, :force_global)
+  save_cluster_to_json(cluster, "cluster_params.json")
 
-    force_history = [1.0, 2.0, 3.0]
-    dt = 1.0
-    tmp1 = "test_state.json"
-    save_cluster_state(c, force_history, states, tmp1, dt)
+  loaded_cluster = load_from_json("cluster_params.json", false)
 
-    saved = JSON.parsefile(tmp1; allownan = true, nan = "nan")
+  (
+    loaded_cluster isa Cluster
+    && loaded_cluster.n == 5
+    && isapprox(loaded_cluster.l, 1.0)
+    && loaded_cluster.f_model == :force_global
+    && all(b -> b isa Bond, loaded_cluster.u)
+    && all(isapprox.([b.state for b in loaded_cluster.u], falses(5), atol=tol))
+    && all(isnan.([b.f for b in loaded_cluster.u]))
+    && all(b -> b.model isa BondModel{Slip}, loaded_cluster.u)
+    && all(isapprox.([b.model.k_on for b in loaded_cluster.u], ones(5), atol=tol))
+    && all(isapprox.([b.model.k_off_0 for b in loaded_cluster.u], fill(2.0, 5), atol=tol))
+    && all(isapprox.([b.model.f_1e for b in loaded_cluster.u], fill(3.0, 5), atol=tol))
+  )
 
-    cluster_ok = (
-      saved["cluster"]["type"] == "cluster"
-      && saved["cluster"]["f_model"] == "force_global"
-      && saved["cluster"]["n"] == 3
-      && isapprox(saved["cluster"]["l"], 1.0)
-      && length(saved["cluster"]["children"]) == 3
-    )
-
-    force_ok = all(isapprox.(saved["force"], force_history))
-    dt_ok = isapprox(saved["dt"], dt)
-
-    time_key_map = Dict(
-      parse(Float64, k) => k
-      for k in keys(saved)
-      if k != "cluster" && k != "force" && k != "dt"
-    )
-
-    times_ok = (
-      length(time_key_map) == 3
-      && haskey(time_key_map, 0.0)
-      && haskey(time_key_map, 1.0)
-      && haskey(time_key_map, 2.0)
-    )
-
-    t0_force_tree = saved[time_key_map[0.0]]
-    t1_force_tree = saved[time_key_map[1.0]]
-    t2_force_tree = saved[time_key_map[2.0]]
-
-    trees_ok = (
-      isapprox(t0_force_tree[1], 5.0)
-      && isapprox(t0_force_tree[2][1], 2.0)
-      && isnan(t0_force_tree[2][2])
-      && isapprox(t0_force_tree[2][3], 3.0)
-      && isapprox(t1_force_tree[1], 5.0)
-      && isapprox(t1_force_tree[2][1], 2.0)
-      && isnan(t1_force_tree[2][2])
-      && isapprox(t1_force_tree[2][3], 3.0)
-      && isapprox(t2_force_tree[1], 5.0)
-      && isapprox(t2_force_tree[2][1], 2.0)
-      && isnan(t2_force_tree[2][2])
-      && isapprox(t2_force_tree[2][3], 3.0)
-    )
-
-    return cluster_ok && force_ok && dt_ok && times_ok && trees_ok
 end
 
-@test _check_save_cluster_state()
+@test _check_save_cluster_to_json()
 
 
-function _check_save_load_cluster_parameters()
-  model = SlipBondModel((k_on_0=1.1,), (k_off_0=0.2, f_1e=3.3))
+function _check_load_from_json()
 
-  child_a = Cluster(2, 0.5, model, :force_global)
-  child_b = Cluster(2, 0.5, model, :force_local)
+  model = SlipBondModel((k_on_0=0.0,), (k_off_0=0.0, f_1e=1.0))
 
-  root_cluster = Cluster(
-    [child_a, child_b],
+  bonds = Bond.(
+    [true, true],
+    convert(Vector{CellAdhesionFloat}, zeros(2)),
+    repeat([model], 2),
+  )
+
+  cluster = Cluster(
+    bonds,
     true,
     convert(CellAdhesionFloat, 0.0),
     :force_global,
     convert(CellAdhesionInt, 2),
-    convert(CellAdhesionFloat, 1.5),
+    convert(CellAdhesionFloat, 1.0),
   )
 
-  tmp = "test_cluster_params.json"
-  save_cluster_parameters(root_cluster, tmp)
-  loaded = load_cluster_parameters(tmp)
+  force_history = [1.0, 2.0, 3.0]
+  json_path = "test_runcluster_states.json"
 
-  root_ok = (
-    loaded.n == 2
-    && loaded.f_model == :force_global
-    && isapprox(loaded.l, convert(CellAdhesionFloat, 1.5))
+  state, break_force, break_time, steps = runcluster(cluster, force_history, 0.5, json_path; max_steps = 3, verbose = false)
+
+  # test case where force is not loaded
+  cluster = load_from_json(json_path, false)
+  no_force_ok = (
+    cluster isa Cluster
+    && cluster.n == 2
+    && isapprox(cluster.l, 1.0)
+    && cluster.f_model == :force_global
+    && all(b -> b isa Bond, cluster.u)
+    && all(isapprox.([b.state for b in cluster.u], falses(2), atol=tol))
+    && all(isnan.([b.f for b in cluster.u]))
+    && all(b -> b.model isa BondModel{Slip}, cluster.u)
+    && all(isapprox.([b.model.k_on for b in cluster.u], zeros(2), atol=tol))
+    && all(isapprox.([b.model.k_off_0 for b in cluster.u], zeros(2), atol=tol))
+    && all(isapprox.([b.model.f_1e for b in cluster.u], ones(2), atol=tol))
   )
 
-  children_ok = (
-    length(loaded.u) == 2
-    && loaded.u[1] isa Cluster
-    && loaded.u[2] isa Cluster
-    && loaded.u[1].n == 2
-    && loaded.u[2].n == 2
-    && loaded.u[1].f_model == :force_global
-    && loaded.u[2].f_model == :force_local
+  # test case where force is loaded
+  cluster, force_on_junction, dt, force_time_dict  = load_from_json(json_path, true)
+  force_loaded_ok = (
+    cluster isa Cluster
+    && cluster.n == 2
+    && isapprox(cluster.l, 1.0)
+    && cluster.f_model == :force_global
+    && all(b -> b isa Bond, cluster.u)
+    && all(isapprox.([b.state for b in cluster.u], falses(2), atol=tol))
+    && all(isnan.([b.f for b in cluster.u]))
+    && all(b -> b.model isa BondModel{Slip}, cluster.u)
+    && all(isapprox.([b.model.k_on for b in cluster.u], zeros(2), atol=tol))
+    && all(isapprox.([b.model.k_off_0 for b in cluster.u], zeros(2), atol=tol))
+    && all(isapprox.([b.model.f_1e for b in cluster.u], ones(2), atol=tol))
+    && all(isapprox.(force_on_junction, [1.0, 2.0, 3.0], atol=tol))
+    && isapprox(dt, 0.5, atol=tol)
+    && length(force_time_dict) == 3
+    && haskey(force_time_dict, 0.0)
+    && haskey(force_time_dict, 0.5)
+    && haskey(force_time_dict, 1.0)
+    && isapprox(force_time_dict[0.0][1], 1.0, atol=tol)
+    && all(isapprox.(force_time_dict[0.0][2], [0.5, 0.5], atol=tol))
+    && isapprox(force_time_dict[0.5][1], 2.0, atol=tol)
+    && all(isapprox.(force_time_dict[0.5][2], [1.0, 1.0], atol=tol))
+    && isapprox(force_time_dict[1.0][1], 3.0, atol=tol)
+    && all(isapprox.(force_time_dict[1.0][2], [1.5, 1.5], atol=tol))
   )
 
-  bonds_ok = (
-    all(b -> b isa Bond{BondModel{Slip}}, loaded.u[1].u)
-    && all(b -> b isa Bond{BondModel{Slip}}, loaded.u[2].u)
-  )
+  return no_force_ok && force_loaded_ok
 
-  p1 = getfield(loaded.u[1].u[1].model, :p)
-  p2 = getfield(loaded.u[2].u[2].model, :p)
-  params_ok = (
-    isapprox(p1.k_on, convert(CellAdhesionFloat, 1.1))
-    && isapprox(p1.k_off_0, convert(CellAdhesionFloat, 0.2))
-    && isapprox(p1.f_1e, convert(CellAdhesionFloat, 3.3))
-    && isapprox(p2.k_on, convert(CellAdhesionFloat, 1.1))
-    && isapprox(p2.k_off_0, convert(CellAdhesionFloat, 0.2))
-    && isapprox(p2.f_1e, convert(CellAdhesionFloat, 3.3))
-  )
-
-  reset_ok = (
-    all(b -> (b.state == false) && isnan(b.f), loaded.u[1].u)
-    && all(b -> (b.state == false) && isnan(b.f), loaded.u[2].u)
-  )
-
-  return root_ok && children_ok && bonds_ok && params_ok && reset_ok
 end
 
-@test _check_save_load_cluster_parameters()
+@test _check_load_from_json()

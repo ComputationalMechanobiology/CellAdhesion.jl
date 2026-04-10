@@ -1,5 +1,4 @@
-export update!, runcluster, Cluster, Bond, bond_state_force, save_cluster_state, save_cluster_parameters, load_cluster_parameters
-
+export update!, runcluster, Cluster, Bond, bond_state_force, save_cluster_to_json, load_from_json
 
 """
 update!(v, dt)
@@ -162,7 +161,25 @@ function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64, json_file_n
         print("Maximum number of iterations reached")
     end
   end
-  save_cluster_state(v, force, states, json_file_name, dt)
+
+  # save results to json file
+  combined_dict = Dict()
+  # save each time point's force information
+  for state in states
+      for (time, force_tree) in state
+          combined_dict[time] = force_tree
+      end
+  end
+  cluster_dict = _save_cluster_to_dict(v)   # save cluster structure information
+  combined_dict["cluster"] = cluster_dict
+  combined_dict["force"] = force
+  combined_dict["dt"] = dt
+
+  # save to json file
+  open(json_file_name, "w") do io
+    JSON.json(io, combined_dict; allownan=true, nan="nan")
+  end
+
   return v.state, force[step-1], dt*(step-1), (step-1)
 end
 
@@ -369,53 +386,6 @@ end
 
 
 
-"""
-  save_cluster_state(v, file_name; output=:nested, time=missing)
-  save_cluster_state(states, file_name)
-
-Save cluster bond state/force information to a JSON file.
-
-First method:
-- Input: `v::Cluster`, `file_name::String`.
-- Optional kwargs: `output::Symbol` (default `:nested`), `time::Union{Missing,Real}` (default `missing`).
-- Uses `bond_state_force(v; output=output, time=time)` to build a state dictionary, then writes it as JSON.
-
-Second method:
-- Input: `states::Vector{<:AbstractDict}`, `file_name::String`.
-- Writes a vector of already-obtained bond state dictionaries to JSON.
-
-Also supported helper overload:
-- `save_cluster_state(state::Dict, file_name::String)`.
-
-JSON encoding handles nested arrays/dicts, booleans, numbers, strings, and missing values.
-"""
-
-function save_cluster_state(v::Cluster, force::AbstractVector{<:Real}, states::Vector{<:AbstractDict}, file_name::String, dt::Real)
-  combined_dict = Dict()
-  
-  # save cluster structure information: cluster has f_model, n, l, Bonds have model type and parameters.
-  cluster_dict = _save_cluster_to_dict(v)
-  combined_dict["cluster"] = cluster_dict
-
-  # add forces and dt
-  combined_dict["force"] = force
-  combined_dict["dt"] = dt
-
-  # combine vector of dicts into a single dict with time as keys and force trees as values
-  for state in states
-      for (time, force_tree) in state
-          combined_dict[time] = force_tree
-      end
-  end
-  
-  open(file_name, "w") do io
-    JSON.json(io, combined_dict; allownan=true, nan="nan")
-  end
-
-end
-
-
-
 
 """
   _save_bond_to_dict(bond::Bond)::Dict
@@ -446,10 +416,7 @@ end
 Recursively serialize a Cluster's parameters to a dictionary. Includes cluster-level parameters
 (f_model, n, l) and recursively saves all children (which can be Bonds or nested Clusters).
 """
-function _save_cluster_to_dict(cluster::Cluster)::Dict
-  # Handle NaN in force
-  force_val = isnan(cluster.f) ? "nan" : cluster.f
-  
+function _save_cluster_to_dict(cluster::Cluster)::Dict  
   # Recursively save children
   children = []
   for i = 1:cluster.n
@@ -472,7 +439,7 @@ end
 
 
 """
-  save_cluster_parameters(cluster::Cluster, filename::String)
+  save_cluster_to_json(cluster::Cluster, filename::String)
 
 Save all parameters of a cluster (or cluster of clusters) to a JSON file.
 
@@ -480,14 +447,17 @@ Example:
 ```julia
 model = SlipBondModel((k_on_0=1.0,), (k_off_0=2.0, f_1e=3.0))
 cluster = Cluster(5, 1.0, model, :force_global)
-save_cluster_parameters(cluster, "cluster_params.json")
+save_cluster_to_json(cluster, "cluster_params.json")
 ```
 """
-function save_cluster_parameters(cluster::Cluster, filename::String)
-  cluster_dict = _save_cluster_to_dict(cluster)
-  
+function save_cluster_to_json(cluster::Cluster, filename::String)
+  dict = Dict()
+
+  # save cluster structure information: cluster has f_model, n, l, Bonds have model type and parameters.
+  dict["cluster"] = _save_cluster_to_dict(cluster)
+    
   open(filename, "w") do io
-    JSON.json(io, cluster_dict; allownan=true, nan="nan")
+    JSON.json(io, dict; allownan=true, nan="nan")
   end
 end
 
@@ -551,18 +521,37 @@ end
 
 
 """
-  load_cluster_parameters(filename::String)::Cluster
+  load_from_json(filename::String, load_force::Bool)::Cluster
 
-Load a cluster from a JSON file that was saved with save_cluster_parameters.
+Load a cluster (and force) from a JSON file that was saved with save_cluster_to_json/.
 
 Example:
 ```julia
-cluster = load_cluster_parameters("cluster_params.json")
+cluster = load_from_json("cluster_params.json", false)
 ```
 """
-function load_cluster_parameters(filename::String)::Cluster
+function load_from_json(filename::String, load_force::Bool)
   data = JSON.parsefile(filename; allownan=true, nan="nan")
-  return _load_cluster_from_dict(data)
+  cluster = _load_cluster_from_dict(data["cluster"])
+  if load_force
+    # get overall force
+    force_on_junction = convert(Vector{CellAdhesionFloat}, data["force"])
+    # get time step
+    dt = convert(CellAdhesionFloat, data["dt"])
+
+    # JSON object keys are strings; keep only numeric time keys and map them to Float64.
+    force_time_dict = Dict{Float64, Any}()
+    for key in keys(data)
+      key_str = String(key)
+      t = tryparse(Float64, key_str)
+      if !isnothing(t)
+        force_time_dict[t] = data[key]
+      end
+    end
+
+    return cluster, force_on_junction, dt, force_time_dict
+  end
+  return cluster
 end
 
 
