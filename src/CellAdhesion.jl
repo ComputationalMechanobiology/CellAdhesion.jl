@@ -9,6 +9,7 @@ CellAdhesionInt = Int32
 export CellAdhesionFloat, CellAdhesionInt
 
 using Plots
+using JSON
 
 export Bond, Cluster
 export BondModel, BondType, Slip, Catch

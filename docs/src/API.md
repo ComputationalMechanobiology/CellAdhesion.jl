@@ -12,19 +12,29 @@ Cluster
 ## Processing functions
 ```@docs
 CellAdhesion.update!
-runcluster
+CellAdhesion.runcluster
+CellAdhesion.bond_state_force
+CellAdhesion.save_cluster_to_json
+CellAdhesion.load_from_json
 ```
 
 ## Utility functions
 ```@docs
 CellAdhesion.state!
-CellAdhesion.bond_state_force
-print_cluster
+CellAdhesion.print_cluster
+```
+
+## Serialization internals
+```@docs
+CellAdhesion._save_bond_to_dict
+CellAdhesion._save_cluster_to_dict
+CellAdhesion._load_bond_from_dict
+CellAdhesion._load_cluster_from_dict
 ```
 
 ## Dynamics functions
 ```@docs
-setforce!
+CellAdhesion.setforce!
 CellAdhesion.force_global
 CellAdhesion.force_local
 CellAdhesion.distance
