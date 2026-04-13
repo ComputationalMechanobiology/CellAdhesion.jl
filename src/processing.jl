@@ -291,61 +291,22 @@ end
 """
   bond_state_force(v; output=:flat, time=missing)
 
-  Return bond state/force information for a `Bond`, a `Cluster{Bond}`, or nested `Cluster`.
+Return bond state/force information for a `Bond`, a `Cluster{Bond}`, or nested `Cluster`.
 
-  - `output=:flat` (default) returns tuples `(states, forces)` identical to the previous API.
-  - `output=:nested` returns a `Dict` with keys "time", "states", "force" that includes
-    each level of the hierarchy. At every cluster level, the first entry is the cluster
-    state/force, followed by its children. Example structure:
+- `output=:flat` (default) returns tuples `(states, forces)`.
+- `output=:nested` returns a `Dict(time => force_tree)` representation of the hierarchy,
+  where each cluster level stores `[cluster_force, child_forces]`.
 
-    * states = [true, [[true, [true, true, false]],
-                       [false, [false, false, false]],
-                       [true, [true, false, false]]]]
-    * force  = [4.0, [[3.0, [1.0, 2.0, NaN]],
-                      [NaN, [NaN, NaN, NaN]],
-                      [1.0, [1.0, NaN, NaN]]]]
-
-  Closed bonds are assigned `NaN` in the force output.
+Closed bonds are assigned `NaN` in the force output.
 """
-
-function _state_force_tree(v::Bond)
-  force = v.state ? v.f : convert(CellAdhesionFloat, NaN)
-  return v.state, force
-end
-
-function _state_force_tree(v::Cluster{Bond{T}}) where T <: BondModel
-  states = getfield.(v.u, :state)
-  force_out = Vector{CellAdhesionFloat}(undef, v.n)
-  for i = 1:v.n
-    force_out[i] = v.u[i].state ? v.u[i].f : convert(CellAdhesionFloat, NaN)
-  end
-  return Any[v.state, states], Any[v.f, force_out]
-end
-
-function _state_force_tree(v::Cluster)
-  nested_states = Vector{Any}(undef, v.n)
-  nested_forces = Vector{Any}(undef, v.n)
-  for i = 1:v.n
-    nested_states[i], nested_forces[i] = _state_force_tree(v.u[i])
-  end
-  return Any[v.state, nested_states], Any[v.f, nested_forces]
-end
-
-function _state_force_dict(v, time)
-  state_tree, force_tree = _state_force_tree(v)
-  
-  return Dict(
-    time => force_tree,
-  )
-end
-
 function bond_state_force(v::Bond; output::Symbol = :flat, time::Union{Missing,Real} = missing)
   if output == :flat
     state = v.state
     force = v.state ? v.f : convert(CellAdhesionFloat, NaN)
     return Bool[state], CellAdhesionFloat[force]
   elseif output == :nested
-    return _state_force_dict(v, time)
+    force = v.state ? v.f : convert(CellAdhesionFloat, NaN)
+    return Dict(time => force)
   else
     throw(ArgumentError("output must be :flat or :nested"))
   end
@@ -361,7 +322,11 @@ function bond_state_force(v::Cluster{Bond{T}}; output::Symbol = :flat, time::Uni
     end
     return states, force_out
   elseif output == :nested
-    return _state_force_dict(v, time)
+    force_out = Vector{CellAdhesionFloat}(undef, v.n)
+    for i = 1:v.n
+      force_out[i] = v.u[i].state ? v.u[i].f : convert(CellAdhesionFloat, NaN)
+    end
+    return Dict(time => Any[v.f, force_out])
   else
     throw(ArgumentError("output must be :flat or :nested"))
   end
@@ -378,7 +343,12 @@ function bond_state_force(v::Cluster; output::Symbol = :flat, time::Union{Missin
     end
     return states, forces
   elseif output == :nested
-    return _state_force_dict(v, time)
+    nested_forces = Vector{Any}(undef, v.n)
+    for i = 1:v.n
+      child_force_dict = bond_state_force(v.u[i]; output = :nested, time = time)
+      nested_forces[i] = child_force_dict[time]
+    end
+    return Dict(time => Any[v.f, nested_forces])
   else
     throw(ArgumentError("output must be :flat or :nested"))
   end
