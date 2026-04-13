@@ -790,3 +790,41 @@ function _check_load_from_json_nested_catch()
 end
 
 @test _check_load_from_json_nested_catch()
+
+
+function _check_load_from_json_invalid_bond_type()
+  slip_model = SlipBondModel((k_on_0=1.0,), (k_off_0=2.0, f_1e=3.0))
+
+  cluster = Cluster(
+    Bond.([true, false], convert(Vector{CellAdhesionFloat}, [1.0, 2.0]), repeat([slip_model], 2)),
+    true,
+    convert(CellAdhesionFloat, 0.0),
+    :force_global,
+    convert(CellAdhesionInt, 2),
+    convert(CellAdhesionFloat, 1.0),
+  )
+
+  json_path = tempname() * ".json"
+  save_cluster_to_json(cluster, json_path)
+
+  json_data = JSON.parsefile(json_path; allownan = true, nan = "nan")
+  # Corrupt the model_type of the first bond to an unrecognised value
+  json_data["cluster"]["children"][1]["model_type"] = "InvalidBondType"
+
+  open(json_path, "w") do io
+    JSON.json(io, json_data; allownan = true, nan = "nan")
+  end
+
+  threw_correct_error = false
+  try
+    load_from_json(json_path, false)
+  catch e
+    threw_correct_error = e isa ArgumentError && occursin("InvalidBondType", e.msg)
+  end
+
+  isfile(json_path) && rm(json_path; force = true)
+
+  return threw_correct_error
+end
+
+@test _check_load_from_json_invalid_bond_type()
