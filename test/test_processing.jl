@@ -298,11 +298,11 @@ function _check_runcluster_json_output()
   )
 
   force_history = [1.0, 2.0, 3.0]
-  json_path = "test_runcluster_states.json"
+  json_path = tempname()
 
   state, break_force, break_time, steps = runcluster(cluster, force_history, 0.5, json_path; max_steps = 3, verbose = false)
 
-  saved = JSON.parsefile(json_path)
+  saved = JSON.parsefile(json_path; allownan=true, nan="nan")
 
   cluster_ok = (
     saved["cluster"]["type"] == "cluster"
@@ -343,7 +343,55 @@ function _check_runcluster_json_output()
 
   run_ok = (state == true) && isapprox(break_force, convert(CellAdhesionFloat, 3.0)) && isapprox(break_time, convert(CellAdhesionFloat, 1.5)) && (steps == 3)
 
-  return run_ok && cluster_ok && force_ok && dt_ok && times_ok && force_trees_ok
+  breaking_model = SlipBondModel((k_on_0=0.0,), (k_off_0=2.0, f_1e=1.0))
+
+  breaking_bonds = Bond.(
+    [true, true],
+    convert(Vector{CellAdhesionFloat}, zeros(2)),
+    repeat([breaking_model], 2),
+  )
+
+  breaking_cluster = Cluster(
+    breaking_bonds,
+    true,
+    convert(CellAdhesionFloat, 0.0),
+    :force_global,
+    convert(CellAdhesionInt, 2),
+    convert(CellAdhesionFloat, 1.0),
+  )
+
+  breaking_force_history = [1.0]
+  breaking_json_path = tempname()
+
+  breaking_state, breaking_force, breaking_time, breaking_steps = runcluster(
+    breaking_cluster,
+    breaking_force_history,
+    0.5,
+    breaking_json_path;
+    max_steps = 3,
+    verbose = false,
+  )
+
+  saved_breaking = JSON.parsefile(breaking_json_path; allownan=true, nan="nan")
+  breaking_time_keys = [
+    tryparse(Float64, key)
+    for key in keys(saved_breaking)
+    if key != "cluster" && key != "force" && key != "dt"
+  ]
+  breaking_time_values = filter(!isnothing, breaking_time_keys)
+  last_breaking_time = maximum(breaking_time_values)
+  last_breaking_state = saved_breaking[string(last_breaking_time)]
+
+  breaking_ok = (
+    breaking_state == false
+    && isapprox(breaking_force, convert(CellAdhesionFloat, 1.0))
+    && isapprox(breaking_time, convert(CellAdhesionFloat, 0.5))
+    && (breaking_steps == 1)
+    && length(breaking_time_values) == 2
+    && isapprox(last_breaking_time, 0.5)
+    && all(isnan, last_breaking_state[2])
+  )
+  return run_ok && cluster_ok && force_ok && dt_ok && times_ok && force_trees_ok && breaking_ok
 
 end
 
@@ -415,6 +463,8 @@ function _check_bond_state_force_nested()
     model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
     force_string = :force_global
 
+  bond_nested = bond_state_force(Bond(true, convert(CellAdhesionFloat, 6.5), model); output = :nested, time = 2.5)
+
     flat_cluster = Cluster(
         Bond.([true, false, true], convert(Vector{CellAdhesionFloat}, [1.0, 2.0, 3.0]), repeat([model], 3)),
         true,
@@ -446,6 +496,9 @@ function _check_bond_state_force_nested()
     flat_nested = bond_state_force(flat_cluster; output = :nested, time = 0.5)
     nested_nested = bond_state_force(nested_cluster; output = :nested, time = 1.3)
 
+  @test haskey(bond_nested, 2.5)
+  @test isapprox(bond_nested[2.5], convert(CellAdhesionFloat, 6.5))
+
     @test haskey(flat_nested, 0.5)
     flat_force_tree = flat_nested[0.5]
     @test isapprox(flat_force_tree[1], convert(CellAdhesionFloat, 0.0))
@@ -463,6 +516,36 @@ function _check_bond_state_force_nested()
 end
 
 @test _check_bond_state_force_nested()
+
+
+function _check_bond_state_force_errors()
+  model = SlipBondModel((k_on_0=1.0,), (k_off_0=0.0, f_1e=1))
+  bond = Bond(true, convert(CellAdhesionFloat, 1.0), model)
+  flat_cluster = Cluster(
+    Bond.([true, false], convert(Vector{CellAdhesionFloat}, [1.0, 2.0]), repeat([model], 2)),
+    true,
+    convert(CellAdhesionFloat, 0.0),
+    :force_global,
+    convert(CellAdhesionInt, 2),
+    convert(CellAdhesionFloat, 1.0),
+  )
+  nested_cluster = Cluster(
+    [flat_cluster],
+    true,
+    convert(CellAdhesionFloat, 0.0),
+    :force_global,
+    convert(CellAdhesionInt, 1),
+    convert(CellAdhesionFloat, 1.0),
+  )
+
+  @test_throws ArgumentError bond_state_force(bond; output = :invalid)
+  @test_throws ArgumentError bond_state_force(flat_cluster; output = :invalid)
+  @test_throws ArgumentError bond_state_force(nested_cluster; output = :invalid)
+
+  return true
+end
+
+@test _check_bond_state_force_errors()
 
 
 function _check_save_cluster_to_json()
@@ -490,6 +573,69 @@ function _check_save_cluster_to_json()
 end
 
 @test _check_save_cluster_to_json()
+
+
+function _check_save_cluster_to_json_nested()
+  slip_model = SlipBondModel((k_on_0=1.0,), (k_off_0=2.0, f_1e=3.0))
+  catch_model = CatchBondModel((k_on_0=0.5,), (k_off_0s=1.5, f_1es=2.5, k_off_0c=3.5, f_1ec=4.5))
+
+  left_cluster = Cluster(
+    Bond.([true, false], convert(Vector{CellAdhesionFloat}, [1.0, 2.0]), repeat([slip_model], 2)),
+    true,
+    convert(CellAdhesionFloat, 0.0),
+    :force_global,
+    convert(CellAdhesionInt, 2),
+    convert(CellAdhesionFloat, 1.0),
+  )
+
+  right_cluster = Cluster(
+    Bond.([false, true], convert(Vector{CellAdhesionFloat}, [3.0, 4.0]), [catch_model, slip_model]),
+    true,
+    convert(CellAdhesionFloat, 0.0),
+    :force_local,
+    convert(CellAdhesionInt, 2),
+    convert(CellAdhesionFloat, 1.0),
+  )
+
+  cluster = Cluster(
+    [left_cluster, right_cluster],
+    true,
+    convert(CellAdhesionFloat, 0.0),
+    :force_global,
+    convert(CellAdhesionInt, 2),
+    convert(CellAdhesionFloat, 1.0),
+  )
+
+  json_path = tempname() * ".json"
+  save_cluster_to_json(cluster, json_path)
+
+  loaded_cluster = load_from_json(json_path, false)
+
+  isfile(json_path) && rm(json_path; force = true)
+
+  (
+    loaded_cluster isa Cluster
+    && loaded_cluster.n == 2
+    && isapprox(loaded_cluster.l, 1.0)
+    && loaded_cluster.f_model == :force_global
+    && all(child -> child isa Cluster, loaded_cluster.u)
+    && all(child -> child.n == 2, loaded_cluster.u)
+    && all(isapprox.([child.l for child in loaded_cluster.u], fill(1.0, 2), atol = tol))
+    && all(child -> child.f_model in (:force_global, :force_local), loaded_cluster.u)
+    && loaded_cluster.u[1].u[1] isa Bond
+    && loaded_cluster.u[2].u[1] isa Bond
+    && loaded_cluster.u[2].u[1].model isa BondModel{Catch}
+    && loaded_cluster.u[2].u[2].model isa BondModel{Slip}
+    && isapprox(loaded_cluster.u[2].u[1].model.k_on, 0.5, atol = tol)
+    && isapprox(loaded_cluster.u[2].u[1].model.k_off_0s, 1.5, atol = tol)
+    && isapprox(loaded_cluster.u[2].u[1].model.f_1es, 2.5, atol = tol)
+    && isapprox(loaded_cluster.u[2].u[1].model.k_off_0c, 3.5, atol = tol)
+    && isapprox(loaded_cluster.u[2].u[1].model.f_1ec, 4.5, atol = tol)
+  )
+
+end
+
+@test _check_save_cluster_to_json_nested()
 
 
 function _check_load_from_json()
@@ -565,3 +711,82 @@ function _check_load_from_json()
 end
 
 @test _check_load_from_json()
+
+
+function _check_load_from_json_nested_catch()
+  slip_model = SlipBondModel((k_on_0=1.0,), (k_off_0=2.0, f_1e=3.0))
+  catch_model = CatchBondModel((k_on_0=0.5,), (k_off_0s=1.5, f_1es=2.5, k_off_0c=3.5, f_1ec=4.5))
+
+  left_cluster = Cluster(
+    Bond.([true, false], convert(Vector{CellAdhesionFloat}, [1.0, 2.0]), repeat([slip_model], 2)),
+    true,
+    convert(CellAdhesionFloat, 0.0),
+    :force_global,
+    convert(CellAdhesionInt, 2),
+    convert(CellAdhesionFloat, 1.0),
+  )
+
+  right_cluster = Cluster(
+    Bond.([false, true], convert(Vector{CellAdhesionFloat}, [3.0, 4.0]), [catch_model, slip_model]),
+    true,
+    convert(CellAdhesionFloat, 0.0),
+    :force_local,
+    convert(CellAdhesionInt, 2),
+    convert(CellAdhesionFloat, 1.0),
+  )
+
+  cluster = Cluster(
+    [left_cluster, right_cluster],
+    true,
+    convert(CellAdhesionFloat, 0.0),
+    :force_global,
+    convert(CellAdhesionInt, 2),
+    convert(CellAdhesionFloat, 1.0),
+  )
+
+  json_path = tempname() * ".json"
+  save_cluster_to_json(cluster, json_path)
+
+  json_data = JSON.parsefile(json_path; allownan = true, nan = "nan")
+  json_data["force"] = [10.0, 20.0, 30.0]
+  json_data["dt"] = 0.25
+  json_data["0.0"] = Any[11.0, [Any[1.0, [0.1, 0.2]], Any[2.0, [0.3, 0.4]]]]
+  json_data["0.25"] = Any[12.0, [Any[3.0, [1.1, 1.2]], Any[4.0, [1.3, 1.4]]]]
+
+  open(json_path, "w") do io
+    JSON.json(io, json_data; allownan = true, nan = "nan")
+  end
+
+  loaded_cluster, force_on_junction, dt, force_time_dict = load_from_json(json_path, true)
+
+  isfile(json_path) && rm(json_path; force = true)
+
+  (
+    loaded_cluster isa Cluster
+    && loaded_cluster.n == 2
+    && isapprox(loaded_cluster.l, 1.0)
+    && loaded_cluster.f_model == :force_global
+    && all(child -> child isa Cluster, loaded_cluster.u)
+    && loaded_cluster.u[1].u[1] isa Bond
+    && loaded_cluster.u[2].u[1].model isa BondModel{Catch}
+    && loaded_cluster.u[2].u[2].model isa BondModel{Slip}
+    && isapprox(loaded_cluster.u[2].u[1].model.k_on, 0.5, atol = tol)
+    && isapprox(loaded_cluster.u[2].u[1].model.k_off_0s, 1.5, atol = tol)
+    && isapprox(loaded_cluster.u[2].u[1].model.f_1es, 2.5, atol = tol)
+    && isapprox(loaded_cluster.u[2].u[1].model.k_off_0c, 3.5, atol = tol)
+    && isapprox(loaded_cluster.u[2].u[1].model.f_1ec, 4.5, atol = tol)
+    && all(isapprox.(force_on_junction, [10.0, 20.0, 30.0], atol = tol))
+    && isapprox(dt, 0.25, atol = tol)
+    && haskey(force_time_dict, 0.0)
+    && haskey(force_time_dict, 0.25)
+    && isapprox(force_time_dict[0.0][1], 11.0, atol = tol)
+    && isapprox(force_time_dict[0.0][2][1][1], 1.0, atol = tol)
+    && isapprox(force_time_dict[0.0][2][2][1], 2.0, atol = tol)
+    && isapprox(force_time_dict[0.25][1], 12.0, atol = tol)
+    && isapprox(force_time_dict[0.25][2][1][1], 3.0, atol = tol)
+    && isapprox(force_time_dict[0.25][2][2][1], 4.0, atol = tol)
+  )
+
+end
+
+@test _check_load_from_json_nested_catch()

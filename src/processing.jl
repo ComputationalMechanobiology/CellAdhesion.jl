@@ -149,9 +149,7 @@ function runcluster(v::Cluster, force::Vector{Float64}, dt::Float64, json_file_n
       step = step + 1
   end
   if v.state == false
-    # add the state after the final update!
-    F = force[step-1]
-    setforce!(v, F)
+    # to show in json that the junction broke
     push!(states, bond_state_force(v; output = :nested, time = (step-1)*dt))
   end
   if verbose == true
