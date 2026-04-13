@@ -369,7 +369,7 @@ function _check_runcluster_json_output()
     0.5,
     breaking_json_path;
     max_steps = 3,
-    verbose = false,
+    verbose = true,
   )
 
   saved_breaking = JSON.parsefile(breaking_json_path; allownan=true, nan="nan")
