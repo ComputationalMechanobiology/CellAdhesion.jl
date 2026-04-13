@@ -300,7 +300,7 @@ function _check_runcluster_json_output()
   force_history = [1.0, 2.0, 3.0]
   json_path = tempname()
 
-  state, break_force, break_time, steps = runcluster(cluster, force_history, 0.5, json_path; max_steps = 3, verbose = false)
+  state, break_force, break_time, steps = runcluster(cluster, force_history, 0.5, json_path; max_steps = 3, verbose = true)
 
   saved = JSON.parsefile(json_path; allownan=true, nan="nan")
 
