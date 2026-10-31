@@ -50,7 +50,7 @@ A dedicated framework (Figure 1) is therefore needed in order to:
 
 Such capabilities are essential for computing the full dynamical evolution of an adhesive junction at the microscopic scale, including its ultimate lifetime under mechanical load.
 
-![High level schematic of the workflow of a stochastic interface simulation.](figures/JOSS_CellAdhesion.png){ width=50% }
+![High level schematic of the workflow of a stochastic interface simulation.](figures/JOSS_CellAdhesion.pdf){ width=50% }
 
 # Implementation
 
@@ -74,7 +74,7 @@ Force-dependent binding and unbinding dynamics are implemented via model-specifi
 
 The evolution of the adhesive interface is simulated through stochastic updates of the bond states, governed by Monte Carlo sampling of the force-dependent binding and unbinding probabilities. The simulation advances in time until the entire bond cluster dissociates or a user-defined terminal time is reached, thereby providing both the temporal evolution of the junction and the resulting interface lifetime together with the corresponding rupture force.
 
-![Schematic of the data structures implemented within the library.](figures/JOSS_data_structure.png){ width=75% }
+![Schematic of the data structures implemented within the library.](figures/JOSS_data_structure.pdf){ width=75% }
 
 # Research use
 
