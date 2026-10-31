@@ -50,7 +50,7 @@ A dedicated framework (Figure 1) is therefore needed in order to:
 
 Such capabilities are essential for computing the full dynamical evolution of an adhesive junction at the microscopic scale, including its ultimate lifetime under mechanical load.
 
-![High level schematic of the workflow of a stochastic interface simulation.](figures/JOSS_CellAdhesion.pdf){ width=50% }
+![High level schematic of the workflow of a stochastic interface simulation.](figures/JOSS_CellAdhesion.pdf){ width=70% }
 
 # Implementation
 
