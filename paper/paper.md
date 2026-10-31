@@ -8,18 +8,20 @@ tags:
   - mechanobiology
 authors:
   - name: Alessandra Bonfanti
-    orcid: 0000-0000-0000-0000
+    orcid: 0000-0003-2185-4913
     affiliation: 1
-  - name: Eleni Papafilippou
-    orcid: 0000-0000-0000-0000
-    affiliation: 1
-  - name: Alexandre Kabla
-    orcid: 0000-0000-0000-0000
     corresponding: true
-    affiliation: 1
+  - name: Eleni Papafilippou
+    orcid: 0009-0001-9352-3569
+    affiliation: 2
+  - name: Alexandre Kabla
+    orcid: 0000-0002-0280-3531
+    affiliation: 2
 affiliations:
-  - name: Department of Engineering, University of Cambridge, United Kingdom
+  - name: Politecnico di Milano, Milan, Italy
     index: 1
+  - name: Department of Engineering, University of Cambridge, United Kingdom
+    index: 2
 date: 31 October 2026
 bibliography: paper.bib
 ---
