@@ -78,7 +78,7 @@ The evolution of the adhesive interface is simulated through stochastic updates 
 
 # Research use
 
-CellAdhesion has been used in recent research works, including fracture of biological tissues [@duque2024rupture] and resilience of biological tissues under cyclic loading [@papafilippoui2025]. Furthermore, it is in use for the study of cell-cell junction interfaces to assess the role of molecules heterogeneity in junction strength.
+CellAdhesion has been used in recent research works, including fracture of biological tissues [@duque2024rupture] and resilience of biological tissues under cyclic loading [@papafilippou2026]. Furthermore, it is in use for the study of cell-cell junction interfaces to assess the role of molecules heterogeneity in junction strength.
 
 # Acknowledgements
 
